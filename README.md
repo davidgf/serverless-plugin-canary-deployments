@@ -46,6 +46,8 @@ functions:
     handler: hooks.post
 ```
 
+You can see a working example in the [example folder](./example/).
+
 ## Configuration
 
 * `type`: (required) defines how the traffic will be shifted between Lambda function versions. It must be one of the following:
