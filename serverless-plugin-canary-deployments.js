@@ -89,6 +89,7 @@ class ServerlessCanaryDeployments {
     const { alias } = deploymentSettings;
     const functionVersion = this.getVersionNameFor(functionName);
     const logicalName = `${functionName}Alias${alias}`;
+
     const beforeHook = _.prop(deploymentSettings, 'preTrafficHook');
     const afterHook = (deploymentSettings, 'postTrafficHook');
 
