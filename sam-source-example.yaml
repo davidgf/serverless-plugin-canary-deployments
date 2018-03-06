@@ -1,0 +1,27 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Resources:
+  MyFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: handler.hello
+      Runtime: nodejs6.10
+      CodeUri: 's3://aws-nodejs-dev-serverlessdeploymentbucket-14iyutt06erm7/serverless/aws-nodejs/dev/1515768309333-2018-01-12T14:45:09.333Z/aws-nodejs.zip'
+      AutoPublishAlias: live
+      DeploymentPreference:
+        Type: Linear10PercentEvery1Minute
+        Hooks:
+          PostTraffic: !Ref MyOtherFunction
+        # Alarms:
+        #   - !Ref LatestVersionErrorMetricGreaterThanZeroAlarm
+  MyOtherFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: handler.hello
+      Runtime: nodejs6.10
+      CodeUri: 's3://aws-nodejs-dev-serverlessdeploymentbucket-14iyutt06erm7/serverless/aws-nodejs/dev/1515768309333-2018-01-12T14:45:09.333Z/aws-nodejs.zip'
+      AutoPublishAlias: public
+      DeploymentPreference:
+        Type: Canary10Percent30Minutes
+        # Alarms:
+        #   - !Ref LatestVersionErrorMetricGreaterThanZeroAlarm
