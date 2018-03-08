@@ -165,7 +165,7 @@ class ServerlessCanaryDeployments {
     const isVersionForFunction = _.matchesProperty('Properties.FunctionName.Ref', functionName);
     const getVersionNameForFunction = _.pipe(
       _.pickBy(isLambdaVersion),
-      _.findKey(isVersionForFunction),
+      _.findKey(isVersionForFunction)
     );
     return getVersionNameForFunction(this.compiledTpl.Resources);
   }
