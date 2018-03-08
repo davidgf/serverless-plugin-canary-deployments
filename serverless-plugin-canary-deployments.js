@@ -91,7 +91,7 @@ class ServerlessCanaryDeployments {
     const logicalName = `${functionName}Alias${alias}`;
 
     const beforeHook = _.prop(deploymentSettings, 'preTrafficHook');
-    const afterHook = _.(deploymentSettings, 'postTrafficHook');
+    const afterHook = _.prop(deploymentSettings, 'postTrafficHook');
 
     const trafficShiftingSettings = {
       codeDeployApp: this.codeDeployAppName,
@@ -169,6 +169,7 @@ class ServerlessCanaryDeployments {
 
   getDeploymentSettingsFor(serverlessFunction) {
     const globalSettings = _.cloneDeep(_.prop(this.service, 'custom', 'deploymentSettings'));
+
     const fnDeploymentSetting = this.service.getFunction(serverlessFunction).deploymentSettings;
     return Object.assign({}, globalSettings, fnDeploymentSetting);
   }
