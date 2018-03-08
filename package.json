@@ -1,11 +1,11 @@
 {
   "name": "serverless-plugin-canary-deployments",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A Serverless plugin to implement canary deployment of Lambda functions",
   "main": "serverless-plugin-canary-deployments.js",
   "scripts": {
-    "test": "NODE_ENV=test ./node_modules/mocha/bin/mocha $(find ./lib/ -name '*.test.js' -not -path './node_modules/*')",
-    "watch": "NODE_ENV=test mocha -w $(find ./lib/ -name '*.test.js' -not -path './node_modules/*')"
+    "test": "NODE_ENV=test ./node_modules/mocha/bin/mocha $(find ./ -name '*.test.js' -not -path '.*/node_modules/*')",
+    "watch": "NODE_ENV=test ./node_modules/mocha/bin/mocha -w $(find ./ -name '*.test.js' -not -path '*/node_modules/*')"
   },
   "author": "David García <davidgf1987@gmail.com>",
   "license": "ISC",
@@ -22,6 +22,11 @@
     "chai": "^4.1.2",
     "eslint": "^4.18.1",
     "eslint-config-airbnb": "^16.1.0",
-    "mocha": "^5.0.0"
+    "eslint-plugin-import": "^2.9.0",
+    "eslint-plugin-jsx-a11y": "^6.0.3",
+    "eslint-plugin-react": "^7.7.0",
+    "get-installed-path": "^4.0.8",
+    "mocha": "^5.0.0",
+    "serverless": "^1.26.1"
   }
 }

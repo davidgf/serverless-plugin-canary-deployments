@@ -44,7 +44,6 @@ class ServerlessCanaryDeployments {
         codeDeployRole,
         ...functionsResources
       );
-      // console.log(JSON.stringify(this.compiledTpl))
     }
   }
 
@@ -122,17 +121,23 @@ class ServerlessCanaryDeployments {
   }
 
   buildEventsForAlias({ functionName, functionAlias }) {
+    const replaceAliasStrategy = {
+      'AWS::Lambda::EventSourceMapping': CfGenerators.lambda.replaceEventMappingFunctionWithAlias,
+      'AWS::ApiGateway::Method': CfGenerators.apiGateway.replaceMethodUriWithAlias
+    };
     const functionEvents = this.getEventsFor(functionName);
     const functionEventsEntries = Object.entries(functionEvents);
     const eventsWithAlias = functionEventsEntries.map(([logicalName, event]) => {
-      const evt = CfGenerators.apiGateway.replaceMethodUriWithAlias(event, functionAlias);
+      const evt = replaceAliasStrategy[event.Type](event, functionAlias);
       return { [logicalName]: evt };
     });
     return eventsWithAlias;
   }
 
   getEventsFor(functionName) {
-    return this.getApiGatewayMethodsFor(functionName);
+    const apiGatewayMethods = this.getApiGatewayMethodsFor(functionName);
+    const eventSourceMappings = this.getEventSourceMappingsFor(functionName);
+    return Object.assign({}, apiGatewayMethods, eventSourceMappings);
   }
 
   getApiGatewayMethodsFor(functionName) {
@@ -147,6 +152,20 @@ class ServerlessCanaryDeployments {
       _.pickBy(isMethodForFunction)
     );
     return getMethodsForFunction(this.compiledTpl.Resources);
+  }
+
+  getEventSourceMappingsFor(functionName) {
+    const isEventSourceMapping = _.matchesProperty('Type', 'AWS::Lambda::EventSourceMapping');
+    const isMappingForFunction = _.pipe(
+      _.prop('Properties.FunctionName'),
+      flattenObject,
+      _.includes(functionName)
+    );
+    const getMappingsForFunction = _.pipe(
+      _.pickBy(isEventSourceMapping),
+      _.pickBy(isMappingForFunction)
+    );
+    return getMappingsForFunction(this.compiledTpl.Resources);
   }
 
   getVersionNameFor(functionName) {
