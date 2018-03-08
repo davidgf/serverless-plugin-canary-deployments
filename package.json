@@ -1,6 +1,6 @@
 {
   "name": "serverless-plugin-canary-deployments",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A Serverless plugin to implement canary deployment of Lambda functions",
   "main": "serverless-plugin-canary-deployments.js",
   "scripts": {
