@@ -57,9 +57,9 @@ class ServerlessCanaryDeployments {
     const deploymentGroup = this.getResourceLogicalName(deploymentGrTpl);
     const aliasTpl = this.buildFunctionAlias({ deploymentSettings, functionName, deploymentGroup });
     const functionAlias = this.getResourceLogicalName(aliasTpl);
-    const lambdaPermission = this.buildPermissionForAlias({ functionName, functionAlias });
-    const eventsWithAlias = this.buildEventsForAlias({ functionName, functionAlias});
-    return [deploymentGrTpl, aliasTpl, lambdaPermission, ...eventsWithAlias];
+    const lambdaPermissions = this.buildPermissionsForAlias({ functionName, functionAlias });
+    const eventsWithAlias = this.buildEventsForAlias({ functionName, functionAlias });
+    return [deploymentGrTpl, aliasTpl, ...lambdaPermissions, ...eventsWithAlias];
   }
 
   buildCodeDeployApp() {
@@ -105,22 +105,24 @@ class ServerlessCanaryDeployments {
     return { [logicalName]: template };
   }
 
-  buildPermissionForAlias({ functionName, functionAlias }) {
-    const permission = this.getLambdaPermissionFor(functionName);
-    const [logicalName, template] = Object.entries(permission)[0];
-    const templateWithAlias = CfGenerators.lambda.replacePermissionFunctionWithAlias(template, functionAlias);
-    return { [logicalName]: templateWithAlias };
+  buildPermissionsForAlias({ functionName, functionAlias }) {
+    const permissions = this.getLambdaPermissionsFor(functionName);
+    return Object.entries(permissions).map(([logicalName, template]) => {
+      const templateWithAlias = CfGenerators.lambda.replacePermissionFunctionWithAlias(template, functionAlias);
+      return { [logicalName]: templateWithAlias };
+    });
   }
 
   buildEventsForAlias({ functionName, functionAlias }) {
     const replaceAliasStrategy = {
       'AWS::Lambda::EventSourceMapping': CfGenerators.lambda.replaceEventMappingFunctionWithAlias,
-      'AWS::ApiGateway::Method': CfGenerators.apiGateway.replaceMethodUriWithAlias
+      'AWS::ApiGateway::Method': CfGenerators.apiGateway.replaceMethodUriWithAlias,
+      'AWS::SNS::Topic': CfGenerators.sns.replaceTopicSubscriptionFunctionWithAlias
     };
     const functionEvents = this.getEventsFor(functionName);
     const functionEventsEntries = Object.entries(functionEvents);
     const eventsWithAlias = functionEventsEntries.map(([logicalName, event]) => {
-      const evt = replaceAliasStrategy[event.Type](event, functionAlias);
+      const evt = replaceAliasStrategy[event.Type](event, functionAlias, functionName);
       return { [logicalName]: evt };
     });
     return eventsWithAlias;
@@ -129,7 +131,8 @@ class ServerlessCanaryDeployments {
   getEventsFor(functionName) {
     const apiGatewayMethods = this.getApiGatewayMethodsFor(functionName);
     const eventSourceMappings = this.getEventSourceMappingsFor(functionName);
-    return Object.assign({}, apiGatewayMethods, eventSourceMappings);
+    const snsTopics = this.getSnsTopicsFor(functionName);
+    return Object.assign({}, apiGatewayMethods, eventSourceMappings, snsTopics);
   }
 
   getApiGatewayMethodsFor(functionName) {
@@ -160,6 +163,21 @@ class ServerlessCanaryDeployments {
     return getMappingsForFunction(this.compiledTpl.Resources);
   }
 
+  getSnsTopicsFor(functionName) {
+    const isEventSourceMapping = _.matchesProperty('Type', 'AWS::SNS::Topic');
+    const isMappingForFunction = _.pipe(
+      _.prop('Properties.Subscription'),
+      _.map(_.prop('Endpoint.Fn::GetAtt')),
+      _.flatten,
+      _.includes(functionName)
+    );
+    const getMappingsForFunction = _.pipe(
+      _.pickBy(isEventSourceMapping),
+      _.pickBy(isMappingForFunction)
+    );
+    return getMappingsForFunction(this.compiledTpl.Resources);
+  }
+
   getVersionNameFor(functionName) {
     const isLambdaVersion = _.matchesProperty('Type', 'AWS::Lambda::Version');
     const isVersionForFunction = _.matchesProperty('Properties.FunctionName.Ref', functionName);
@@ -170,7 +188,7 @@ class ServerlessCanaryDeployments {
     return getVersionNameForFunction(this.compiledTpl.Resources);
   }
 
-  getLambdaPermissionFor(functionName) {
+  getLambdaPermissionsFor(functionName) {
     const isLambdaPermission = _.matchesProperty('Type', 'AWS::Lambda::Permission');
     const isPermissionForFunction = _.matchesProperty('Properties.FunctionName.Fn::GetAtt[0]', functionName);
     const getPermissionForFunction = _.pipe(

@@ -28,6 +28,7 @@ functions:
             Fn::GetAtt:
               - StreamsTestTable
               - StreamArn
+      - sns: snsTopic
     alarms:
       - name: foo
         namespace: 'AWS/Lambda'
