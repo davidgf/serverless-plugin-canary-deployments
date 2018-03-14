@@ -1,5 +1,7 @@
 node_modules
+.idea
 .serverless
 .serverless_plugins
 mappings.json
 serverless-plugin-canary-deployments*.tgz
+
