@@ -1,0 +1,34 @@
+{
+  "service": "canary-deployments-test",
+  "functions": {
+    "hello": {
+      "handler": "handler.hello",
+      "events": [
+        {
+          "http": "GET hello"
+        },
+        {
+          "stream": {
+            "type": "dynamodb",
+            "arn": {
+              "Fn::GetAtt": [
+                "StreamsTestTable",
+                "StreamArn"
+              ]
+            }
+          }
+        },
+        {
+          "sns": "snsTopic"
+        }
+      ],
+      "deploymentSettings": {
+        "type": "Linear10PercentEvery1Minute",
+        "alias": "Live",
+        "alarms": [
+          "HelloFooAlarm"
+        ]
+      }
+    }
+  }
+}
