@@ -1,3 +1,6 @@
+# 0.3.1 (20.03.2018)
+- Fix bug that prevented setting deployment preferences without hooks
+
 # 0.3.0 (13.03.2018)
 - Support for SNS events
 

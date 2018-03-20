@@ -1,6 +1,6 @@
 {
   "name": "serverless-plugin-canary-deployments",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "A Serverless plugin to implement canary deployment of Lambda functions",
   "main": "serverless-plugin-canary-deployments.js",
   "scripts": {
@@ -8,7 +8,9 @@
     "watch": "NODE_ENV=test ./node_modules/mocha/bin/mocha -w $(find ./ -name '*.test.js' -not -path '*/node_modules/*')"
   },
   "author": "David García <davidgf1987@gmail.com>",
-  "contributors": ["Carlos Castellanos <ccverak@gmail.com> (https://github.com/ccverak/)"],
+  "contributors": [
+    "Carlos Castellanos <ccverak@gmail.com> (https://github.com/ccverak/)"
+  ],
   "license": "ISC",
   "repository": {
     "url": "https://github.com/davidgf/serverless-plugin-canary-deployments.git",
