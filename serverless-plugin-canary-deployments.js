@@ -88,8 +88,8 @@ class ServerlessCanaryDeployments {
     const { alias } = deploymentSettings;
     const functionVersion = this.getVersionNameFor(functionName);
     const logicalName = `${functionName}Alias${alias}`;
-    const beforeHook = this.naming.getLambdaLogicalId(deploymentSettings.preTrafficHook);
-    const afterHook = this.naming.getLambdaLogicalId(deploymentSettings.postTrafficHook);
+    const beforeHook = this.getFunctionName(deploymentSettings.preTrafficHook);
+    const afterHook = this.getFunctionName(deploymentSettings.postTrafficHook);
     const trafficShiftingSettings = {
       codeDeployApp: this.codeDeployAppName,
       deploymentGroup,
@@ -103,6 +103,10 @@ class ServerlessCanaryDeployments {
       trafficShiftingSettings
     });
     return { [logicalName]: template };
+  }
+
+  getFunctionName(slsFunctionName) {
+    return slsFunctionName ? this.naming.getLambdaLogicalId(slsFunctionName) : null;
   }
 
   buildPermissionsForAlias({ functionName, functionAlias }) {
