@@ -207,7 +207,7 @@ class ServerlessCanaryDeployments {
   }
 
   getDeploymentSettingsFor(serverlessFunction) {
-    const globalSettings = _.cloneDeep(this.service.custom.deploymentSettings);
+    const globalSettings = _.cloneDeep((this.service.custom || {}).deploymentSettings);
     const fnDeploymentSetting = this.service.getFunction(serverlessFunction).deploymentSettings;
     return Object.assign({}, globalSettings, fnDeploymentSetting);
   }
