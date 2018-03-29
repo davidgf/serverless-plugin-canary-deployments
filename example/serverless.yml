@@ -29,6 +29,7 @@ functions:
               - StreamsTestTable
               - StreamArn
       - sns: snsTopic
+      - s3: s3SampleBucket
     alarms:
       - name: foo
         namespace: 'AWS/Lambda'

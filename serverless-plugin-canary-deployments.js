@@ -121,7 +121,8 @@ class ServerlessCanaryDeployments {
     const replaceAliasStrategy = {
       'AWS::Lambda::EventSourceMapping': CfGenerators.lambda.replaceEventMappingFunctionWithAlias,
       'AWS::ApiGateway::Method': CfGenerators.apiGateway.replaceMethodUriWithAlias,
-      'AWS::SNS::Topic': CfGenerators.sns.replaceTopicSubscriptionFunctionWithAlias
+      'AWS::SNS::Topic': CfGenerators.sns.replaceTopicSubscriptionFunctionWithAlias,
+      'AWS::S3::Bucket': CfGenerators.s3.replaceS3BucketFunctionWithAlias
     };
     const functionEvents = this.getEventsFor(functionName);
     const functionEventsEntries = Object.entries(functionEvents);
@@ -136,7 +137,8 @@ class ServerlessCanaryDeployments {
     const apiGatewayMethods = this.getApiGatewayMethodsFor(functionName);
     const eventSourceMappings = this.getEventSourceMappingsFor(functionName);
     const snsTopics = this.getSnsTopicsFor(functionName);
-    return Object.assign({}, apiGatewayMethods, eventSourceMappings, snsTopics);
+    const s3Events = this.getS3EventsFor(functionName);
+    return Object.assign({}, apiGatewayMethods, eventSourceMappings, snsTopics, s3Events);
   }
 
   getApiGatewayMethodsFor(functionName) {
@@ -172,6 +174,21 @@ class ServerlessCanaryDeployments {
     const isMappingForFunction = _.pipe(
       _.prop('Properties.Subscription'),
       _.map(_.prop('Endpoint.Fn::GetAtt')),
+      _.flatten,
+      _.includes(functionName)
+    );
+    const getMappingsForFunction = _.pipe(
+      _.pickBy(isEventSourceMapping),
+      _.pickBy(isMappingForFunction)
+    );
+    return getMappingsForFunction(this.compiledTpl.Resources);
+  }
+  
+  getS3EventsFor(functionName) {
+    const isEventSourceMapping = _.matchesProperty('Type', 'AWS::S3::Bucket');
+    const isMappingForFunction = _.pipe(
+      _.prop('Properties.NotificationConfiguration.LambdaConfigurations'),
+      _.map(_.prop('Function.Fn::GetAtt')),
       _.flatten,
       _.includes(functionName)
     );

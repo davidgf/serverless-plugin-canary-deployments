@@ -376,6 +376,43 @@
         }
       }
     },
+    "S3BucketS3SampleBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": "s3SampleBucket",
+        "NotificationConfiguration": {
+          "LambdaConfigurations": [
+            {
+              "Event": "s3:ObjectCreated:*",
+              "Function": {
+                "Ref": "HelloLambdaFunctionAliasLive"
+              }
+            }
+          ]
+        }
+      },
+      "DependsOn": [
+        "HelloLambdaPermissionS3SampleBucketS3"
+      ]
+    },
+    "HelloLambdaPermissionS3SampleBucketS3": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "HelloLambdaFunctionAliasLive"
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "s3.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:aws:s3:::s3SampleBucket"
+            ]
+          ]
+        }
+      }
+    },
     "HelloEventSourceMappingDynamodbStreamsTestTable": {
       "Type": "AWS::Lambda::EventSourceMapping",
       "DependsOn": "IamRoleLambdaExecution",
