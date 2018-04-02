@@ -20,6 +20,9 @@
         },
         {
           "sns": "snsTopic"
+        },
+        {
+          "s3": "s3SampleBucket"
         }
       ],
       "deploymentSettings": {
