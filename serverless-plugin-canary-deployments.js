@@ -111,7 +111,7 @@ class ServerlessCanaryDeployments {
 
   buildPermissionsForAlias({ functionName, functionAlias }) {
     const permissions = this.getLambdaPermissionsFor(functionName);
-    return Object.entries(permissions).map(([logicalName, template]) => {
+    return _.entries(permissions).map(([logicalName, template]) => {
       const templateWithAlias = CfGenerators.lambda.replacePermissionFunctionWithAlias(template, functionAlias);
       return { [logicalName]: templateWithAlias };
     });
@@ -124,7 +124,7 @@ class ServerlessCanaryDeployments {
       'AWS::SNS::Topic': CfGenerators.sns.replaceTopicSubscriptionFunctionWithAlias
     };
     const functionEvents = this.getEventsFor(functionName);
-    const functionEventsEntries = Object.entries(functionEvents);
+    const functionEventsEntries = _.entries(functionEvents);
     const eventsWithAlias = functionEventsEntries.map(([logicalName, event]) => {
       const evt = replaceAliasStrategy[event.Type](event, functionAlias, functionName);
       return { [logicalName]: evt };
