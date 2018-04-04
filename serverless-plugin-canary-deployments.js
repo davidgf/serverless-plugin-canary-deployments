@@ -32,12 +32,11 @@ class ServerlessCanaryDeployments {
   addCanaryDeploymentResources() {
     if (this.withDeploymentPreferencesFns.length > 0) {
       const codeDeployApp = this.buildCodeDeployApp();
-      const codeDeployRole = this.buildCodeDeployRole();
       const functionsResources = this.buildFunctionsResources();
+
       Object.assign(
         this.compiledTpl.Resources,
         codeDeployApp,
-        codeDeployRole,
         ...functionsResources
       );
     }
@@ -59,7 +58,13 @@ class ServerlessCanaryDeployments {
     const functionAlias = this.getResourceLogicalName(aliasTpl);
     const lambdaPermissions = this.buildPermissionsForAlias({ functionName, functionAlias });
     const eventsWithAlias = this.buildEventsForAlias({ functionName, functionAlias });
-    return [deploymentGrTpl, aliasTpl, ...lambdaPermissions, ...eventsWithAlias];
+
+    const codeDeployRole = {};
+    if(typeof deploymentSettings.codeDeployRole === "undefined") {
+      Object.assign(codeDeployRole, this.buildCodeDeployRole());
+    }
+
+    return [deploymentGrTpl, codeDeployRole, aliasTpl, ...lambdaPermissions, ...eventsWithAlias];
   }
 
   buildCodeDeployApp() {
@@ -78,6 +83,7 @@ class ServerlessCanaryDeployments {
     const logicalName = `${functionName}DeploymentGroup`;
     const params = {
       codeDeployAppName: this.codeDeployAppName,
+      codeDeployRole: deploymentSettings.codeDeployRole,
       deploymentSettings
     };
     const template = CfGenerators.codeDeploy.buildFnDeploymentGroup(params);
