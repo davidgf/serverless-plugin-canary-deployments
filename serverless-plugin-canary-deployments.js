@@ -29,14 +29,19 @@ class ServerlessCanaryDeployments {
       .filter(name => _.has('deploymentSettings', this.service.getFunction(name)));
   }
 
+  get globalSettings() {
+    return _.cloneDeep(this.service.custom.deploymentSettings);
+  }
+
   addCanaryDeploymentResources() {
     if (this.withDeploymentPreferencesFns.length > 0) {
       const codeDeployApp = this.buildCodeDeployApp();
+      const codeDeployRole = this.buildCodeDeployRole();
       const functionsResources = this.buildFunctionsResources();
-
       Object.assign(
         this.compiledTpl.Resources,
         codeDeployApp,
+        codeDeployRole,
         ...functionsResources
       );
     }
@@ -59,12 +64,7 @@ class ServerlessCanaryDeployments {
     const lambdaPermissions = this.buildPermissionsForAlias({ functionName, functionAlias });
     const eventsWithAlias = this.buildEventsForAlias({ functionName, functionAlias });
 
-    const codeDeployRole = {};
-    if(typeof deploymentSettings.codeDeployRole === "undefined") {
-      Object.assign(codeDeployRole, this.buildCodeDeployRole());
-    }
-
-    return [deploymentGrTpl, codeDeployRole, aliasTpl, ...lambdaPermissions, ...eventsWithAlias];
+    return [deploymentGrTpl, aliasTpl, ...lambdaPermissions, ...eventsWithAlias];
   }
 
   buildCodeDeployApp() {
@@ -74,9 +74,11 @@ class ServerlessCanaryDeployments {
   }
 
   buildCodeDeployRole() {
-    const logicalName = 'CodeDeployServiceRole';
-    const template = CfGenerators.iam.buildCodeDeployRole();
-    return { [logicalName]: template };
+    if(!this.globalSettings || !this.globalSettings.codeDeployRole) {
+      const logicalName = 'CodeDeployServiceRole';
+      const template = CfGenerators.iam.buildCodeDeployRole();
+      return { [logicalName]: template };
+    }
   }
 
   buildFunctionDeploymentGroup({ deploymentSettings, functionName }) {
@@ -213,9 +215,8 @@ class ServerlessCanaryDeployments {
   }
 
   getDeploymentSettingsFor(serverlessFunction) {
-    const globalSettings = _.cloneDeep(this.service.custom.deploymentSettings);
     const fnDeploymentSetting = this.service.getFunction(serverlessFunction).deploymentSettings;
-    return Object.assign({}, globalSettings, fnDeploymentSetting);
+    return Object.assign({}, this.globalSettings, fnDeploymentSetting);
   }
 }
 

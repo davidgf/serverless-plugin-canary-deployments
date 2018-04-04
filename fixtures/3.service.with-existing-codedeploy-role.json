@@ -1,5 +1,10 @@
 {
   "service": "canary-deployments-test",
+  "custom": {
+    "deploymentSettings": {
+      "codeDeployRole": "someExistingCodeDeployRole"
+    }
+  },
   "functions": {
     "hello": {
       "handler": "handler.hello",
@@ -29,8 +34,7 @@
         "postTrafficHook": "postHook",
         "alarms": [
           "HelloFooAlarm"
-        ],
-        "codeDeployRole": "someExistingCodeDeployRole"
+        ]
       }
     },
     "preHook": {
