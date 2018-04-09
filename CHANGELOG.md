@@ -1,3 +1,7 @@
+# 0.4.0 (09.04.2018)
+- Add support for S3 events
+- Fix bug that prevented `custom` section in `serverless.yml` to be empty
+
 # 0.3.1 (20.03.2018)
 - Fix bug that prevented setting deployment preferences without hooks
 
