@@ -183,7 +183,7 @@ class ServerlessCanaryDeployments {
     );
     return getMappingsForFunction(this.compiledTpl.Resources);
   }
-  
+
   getS3EventsFor(functionName) {
     const isEventSourceMapping = _.matchesProperty('Type', 'AWS::S3::Bucket');
     const isMappingForFunction = _.pipe(
@@ -224,7 +224,7 @@ class ServerlessCanaryDeployments {
   }
 
   getDeploymentSettingsFor(serverlessFunction) {
-    const globalSettings = _.cloneDeep(this.service.custom.deploymentSettings);
+    const globalSettings = _.path('custom.deploymentSettings', this.service);
     const fnDeploymentSetting = this.service.getFunction(serverlessFunction).deploymentSettings;
     return Object.assign({}, globalSettings, fnDeploymentSetting);
   }
