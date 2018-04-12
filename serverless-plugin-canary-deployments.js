@@ -30,7 +30,7 @@ class ServerlessCanaryDeployments {
   }
 
   get globalSettings() {
-    return _.cloneDeep(this.service.custom.deploymentSettings);
+    return _.path('custom.deploymentSettings', this.service);
   }
 
   addCanaryDeploymentResources() {
@@ -119,7 +119,7 @@ class ServerlessCanaryDeployments {
 
   buildPermissionsForAlias({ functionName, functionAlias }) {
     const permissions = this.getLambdaPermissionsFor(functionName);
-    return Object.entries(permissions).map(([logicalName, template]) => {
+    return _.entries(permissions).map(([logicalName, template]) => {
       const templateWithAlias = CfGenerators.lambda.replacePermissionFunctionWithAlias(template, functionAlias);
       return { [logicalName]: templateWithAlias };
     });
@@ -129,10 +129,11 @@ class ServerlessCanaryDeployments {
     const replaceAliasStrategy = {
       'AWS::Lambda::EventSourceMapping': CfGenerators.lambda.replaceEventMappingFunctionWithAlias,
       'AWS::ApiGateway::Method': CfGenerators.apiGateway.replaceMethodUriWithAlias,
-      'AWS::SNS::Topic': CfGenerators.sns.replaceTopicSubscriptionFunctionWithAlias
+      'AWS::SNS::Topic': CfGenerators.sns.replaceTopicSubscriptionFunctionWithAlias,
+      'AWS::S3::Bucket': CfGenerators.s3.replaceS3BucketFunctionWithAlias
     };
     const functionEvents = this.getEventsFor(functionName);
-    const functionEventsEntries = Object.entries(functionEvents);
+    const functionEventsEntries = _.entries(functionEvents);
     const eventsWithAlias = functionEventsEntries.map(([logicalName, event]) => {
       const evt = replaceAliasStrategy[event.Type](event, functionAlias, functionName);
       return { [logicalName]: evt };
@@ -144,7 +145,8 @@ class ServerlessCanaryDeployments {
     const apiGatewayMethods = this.getApiGatewayMethodsFor(functionName);
     const eventSourceMappings = this.getEventSourceMappingsFor(functionName);
     const snsTopics = this.getSnsTopicsFor(functionName);
-    return Object.assign({}, apiGatewayMethods, eventSourceMappings, snsTopics);
+    const s3Events = this.getS3EventsFor(functionName);
+    return Object.assign({}, apiGatewayMethods, eventSourceMappings, snsTopics, s3Events);
   }
 
   getApiGatewayMethodsFor(functionName) {
@@ -180,6 +182,21 @@ class ServerlessCanaryDeployments {
     const isMappingForFunction = _.pipe(
       _.prop('Properties.Subscription'),
       _.map(_.prop('Endpoint.Fn::GetAtt')),
+      _.flatten,
+      _.includes(functionName)
+    );
+    const getMappingsForFunction = _.pipe(
+      _.pickBy(isEventSourceMapping),
+      _.pickBy(isMappingForFunction)
+    );
+    return getMappingsForFunction(this.compiledTpl.Resources);
+  }
+
+  getS3EventsFor(functionName) {
+    const isEventSourceMapping = _.matchesProperty('Type', 'AWS::S3::Bucket');
+    const isMappingForFunction = _.pipe(
+      _.prop('Properties.NotificationConfiguration.LambdaConfigurations'),
+      _.map(_.prop('Function.Fn::GetAtt')),
       _.flatten,
       _.includes(functionName)
     );

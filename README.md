@@ -91,7 +91,7 @@ The plugin relies on the [AWS Lambda traffic shifting feature](https://docs.aws.
 
 ## Limitations
 
-For now, the plugin only works with Lambda functions invoked by API Gateway, Stream based (such as the triggered by Kinesis or DynamoDB Streams) and SNS based events. More events will be added soon.
+For now, the plugin only works with Lambda functions invoked by API Gateway, Stream based (such as the triggered by Kinesis or DynamoDB Streams), SNS based events and S3 events. More events will be added soon.
 
 ## License
 

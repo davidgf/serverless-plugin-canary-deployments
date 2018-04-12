@@ -13,10 +13,6 @@ plugins:
   - serverless-plugin-aws-alerts
   - serverless-plugin-canary-deployments
 
-custom:
-  alerts:
-    dashboards: false
-
 functions:
   hello:
     handler: handler.hello
@@ -29,6 +25,7 @@ functions:
               - StreamsTestTable
               - StreamArn
       - sns: snsTopic
+      - s3: s3samplebucket
     alarms:
       - name: foo
         namespace: 'AWS/Lambda'
