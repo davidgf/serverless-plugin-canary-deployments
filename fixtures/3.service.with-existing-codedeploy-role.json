@@ -1,0 +1,47 @@
+{
+  "service": "canary-deployments-test",
+  "custom": {
+    "deploymentSettings": {
+      "codeDeployRole": "someExistingCodeDeployRole"
+    }
+  },
+  "functions": {
+    "hello": {
+      "handler": "handler.hello",
+      "events": [
+        {
+          "http": "GET hello"
+        },
+        {
+          "stream": {
+            "type": "dynamodb",
+            "arn": {
+              "Fn::GetAtt": [
+                "StreamsTestTable",
+                "StreamArn"
+              ]
+            }
+          }
+        },
+        {
+          "sns": "snsTopic"
+        }
+      ],
+      "deploymentSettings": {
+        "type": "Linear10PercentEvery1Minute",
+        "alias": "Live",
+        "preTrafficHook": "preHook",
+        "postTrafficHook": "postHook",
+        "alarms": [
+          "HelloFooAlarm"
+        ]
+      }
+    },
+    "preHook": {
+      "handler": "hooks.pre"
+    },
+    "postHook": {
+      "handler": "hooks.post"
+    }
+  }
+}
