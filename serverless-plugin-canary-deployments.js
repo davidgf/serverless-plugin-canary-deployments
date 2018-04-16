@@ -30,7 +30,7 @@ class ServerlessCanaryDeployments {
   }
 
   get globalSettings() {
-    return _.path('custom.deploymentSettings', this.service);
+    return _.pathOr({}, 'custom.deploymentSettings', this.service);
   }
 
   addCanaryDeploymentResources() {
@@ -74,18 +74,17 @@ class ServerlessCanaryDeployments {
   }
 
   buildCodeDeployRole() {
-    if(!this.globalSettings || !this.globalSettings.codeDeployRole) {
-      const logicalName = 'CodeDeployServiceRole';
-      const template = CfGenerators.iam.buildCodeDeployRole();
-      return { [logicalName]: template };
-    }
+    if (this.globalSettings.codeDeployRole) return {};
+    const logicalName = 'CodeDeployServiceRole';
+    const template = CfGenerators.iam.buildCodeDeployRole();
+    return { [logicalName]: template };
   }
 
   buildFunctionDeploymentGroup({ deploymentSettings, functionName }) {
     const logicalName = `${functionName}DeploymentGroup`;
     const params = {
       codeDeployAppName: this.codeDeployAppName,
-      codeDeployRole: deploymentSettings.codeDeployRole,
+      codeDeployRoleArn: deploymentSettings.codeDeployRole,
       deploymentSettings
     };
     const template = CfGenerators.codeDeploy.buildFnDeploymentGroup(params);
@@ -120,7 +119,8 @@ class ServerlessCanaryDeployments {
   buildPermissionsForAlias({ functionName, functionAlias }) {
     const permissions = this.getLambdaPermissionsFor(functionName);
     return _.entries(permissions).map(([logicalName, template]) => {
-      const templateWithAlias = CfGenerators.lambda.replacePermissionFunctionWithAlias(template, functionAlias);
+      const templateWithAlias = CfGenerators.lambda
+        .replacePermissionFunctionWithAlias(template, functionAlias);
       return { [logicalName]: templateWithAlias };
     });
   }
