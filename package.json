@@ -38,5 +38,12 @@
   "peerDependencies": {
     "serverless": ">= 1.26.0"
   },
-  "keywords": ["aws", "lambda", "serverless", "canary", "gradual", "deployments"]
+  "keywords": [
+    "aws",
+    "lambda",
+    "serverless",
+    "canary",
+    "gradual",
+    "deployments"
+  ]
 }
