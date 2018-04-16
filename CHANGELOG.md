@@ -1,3 +1,6 @@
+# 0.4.1 (16.04.2018)
+- Add configurable Role for CodeDeploy
+
 # 0.4.0 (09.04.2018)
 - Add support for S3 events
 - Fix bug that prevented `custom` section in `serverless.yml` to be empty
