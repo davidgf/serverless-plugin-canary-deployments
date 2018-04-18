@@ -16,6 +16,10 @@ plugins:
 custom:
   alerts:
     dashboards: false
+  deploymentSettings:
+    stages:
+      - dev
+      - prod
 
 functions:
   hello:
