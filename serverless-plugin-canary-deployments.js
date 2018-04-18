@@ -33,8 +33,12 @@ class ServerlessCanaryDeployments {
     return _.pathOr({}, 'custom.deploymentSettings', this.service);
   }
 
+  get currentStage() {
+    return this.awsProvider.getStage();
+  }
+
   addCanaryDeploymentResources() {
-    if (this.withDeploymentPreferencesFns.length > 0) {
+    if (this.shouldDeployDeployGradually()) {
       const codeDeployApp = this.buildCodeDeployApp();
       const codeDeployRole = this.buildCodeDeployRole();
       const functionsResources = this.buildFunctionsResources();
@@ -45,6 +49,15 @@ class ServerlessCanaryDeployments {
         ...functionsResources
       );
     }
+  }
+
+  shouldDeployDeployGradually() {
+    return this.withDeploymentPreferencesFns.length > 0 && this.currentStageEnabled();
+  }
+
+  currentStageEnabled() {
+    const enabledStages = _.getOr([], 'stages', this.globalSettings);
+    return _.isEmpty(enabledStages) || _.includes(this.currentStage, enabledStages);
   }
 
   buildFunctionsResources() {
