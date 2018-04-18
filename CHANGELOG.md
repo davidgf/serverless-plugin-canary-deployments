@@ -1,3 +1,6 @@
+# 0.4.2 (18.04.2018)
+- Add configuration for enabling canary deployments on a per stage basis
+
 # 0.4.1 (16.04.2018)
 - Add configurable Role for CodeDeploy
 
