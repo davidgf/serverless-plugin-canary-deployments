@@ -1,9 +1,9 @@
 {
-  "name": "serverless-plugin-canary-deployments",
+  "name": "@trayio/serverless-plugin-canary-deployments",
   "engines": {
     "node": ">=4.0"
   },
-  "version": "0.4.2",
+  "version": "0.4.4",
   "description": "A Serverless plugin to implement canary deployment of Lambda functions",
   "main": "serverless-plugin-canary-deployments.js",
   "scripts": {
