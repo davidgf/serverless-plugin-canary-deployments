@@ -4,13 +4,13 @@
   "description": "",
   "main": "handler.js",
   "dependencies": {
-    "aws-sdk": "^2.203.0",
-    "uuid": "^3.2.1"
+    "aws-sdk": "^2.336.0",
+    "uuid": "^3.3.2"
   },
   "devDependencies": {
-    "serverless": "^1.26.1",
+    "serverless": "^1.32.0",
     "serverless-plugin-aws-alerts": "^1.2.4",
-    "serverless-plugin-canary-deployments": "^0.4.0"
+    "serverless-plugin-canary-deployments": "^0.4.2"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
