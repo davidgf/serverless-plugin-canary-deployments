@@ -1,3 +1,6 @@
+# 0.4.3 (21.10.2018)
+- Allow referencing alarms by their name
+
 # 0.4.2 (18.04.2018)
 - Add configuration for enabling canary deployments on a per stage basis
 
