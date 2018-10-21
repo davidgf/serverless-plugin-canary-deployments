@@ -38,8 +38,9 @@ functions:
       preTrafficHook: preHook
       postTrafficHook: postHook
       alarms:
-        - FooAlarm
-        - BarAlarm
+        - FooAlarm          # When a string is provided, it expects the alarm Logical ID
+        - name: BarAlarm    # When an object is provided, it expects the alarm name in the name property
+
   preHook:
     handler: hooks.pre
   postHook:
