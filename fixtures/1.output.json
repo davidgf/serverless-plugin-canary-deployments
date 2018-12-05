@@ -286,7 +286,20 @@
           "IntegrationHttpMethod": "POST",
           "Type": "AWS_PROXY",
           "Uri": {
-            "Fn::Sub": "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HelloLambdaFunctionAliasLive}/invocations"
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Ref": "HelloLambdaFunctionAliasLive"
+                },
+                "/invocations"
+              ]
+            ]
           }
         },
         "MethodResponses": []
