@@ -1,3 +1,6 @@
+# 0.4.4 (12.12.2018)
+- Add compatibility with `serverless-plugin-split-stacks`
+
 # 0.4.3 (21.10.2018)
 - Allow referencing alarms by their name
 
