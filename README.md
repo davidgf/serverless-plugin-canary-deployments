@@ -59,7 +59,7 @@ You can see a working example in the [example folder](./example/).
   - `Linear10PercentEvery1Minute`: shifts 10 percent of traffic every minute until all traffic is shifted.
   - `Linear10PercentEvery2Minutes`: shifts 10 percent of traffic every two minutes until all traffic is shifted.
   - `Linear10PercentEvery3Minutes`: shifts 10 percent of traffic every three minutes until all traffic is shifted.
-  - `Linear10PercentEvery10Minutes`: shifts 10 percent of traffic every 30 minutes until all traffic is shifted.
+  - `Linear10PercentEvery10Minutes`: shifts 10 percent of traffic every 10 minutes until all traffic is shifted.
 * `alias`: (required) name that will be used to create the Lambda function alias.
 * `preTrafficHook`: (optional) validation Lambda function that runs before traffic shifting. It must use te CodeDeploy SDK to notify about this step's success or failure (more info [here](https://docs.aws.amazon.com/codedeploy/latest/userguide/reference-appspec-file-structure-hooks.html)).
 * `postTrafficHook`: (optional) validation Lambda function that runs after traffic shifting. It must use te CodeDeploy SDK to notify about this step's success or failure (more info [here](https://docs.aws.amazon.com/codedeploy/latest/userguide/reference-appspec-file-structure-hooks.html))
