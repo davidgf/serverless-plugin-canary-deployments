@@ -544,6 +544,20 @@
             "Arn"
           ]
         },
+        "TriggerConfigurations": [
+          {
+            "TriggerName": "Deploy Notifications",
+            "TriggerEvents": [
+              "DeploymentStart",
+              "DeploymentSuccess",
+              "DeploymentFailure",
+              "DeploymentStop",
+              "DeploymentRollback",
+              "DeploymentReady"
+            ],
+            "TargetTriggerArn": "arn:aws:sns:region:account-id:topicname"
+          }
+        ],
         "DeploymentConfigName": {
           "Fn::Sub": [
             "CodeDeployDefault.Lambda${ConfigName}",
