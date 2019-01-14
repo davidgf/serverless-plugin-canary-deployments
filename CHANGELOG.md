@@ -1,3 +1,6 @@
+# 0.4.5 (14.01.2019)
+- Allow configuring CodeDeploy triggers
+
 # 0.4.4 (12.12.2018)
 - Add compatibility with `serverless-plugin-split-stacks`
 
