@@ -1,3 +1,6 @@
+# 0.4.6 (14.02.2019)
+- Add support for CloudWatchEvents
+
 # 0.4.5 (14.01.2019)
 - Allow configuring CodeDeploy triggers
 
