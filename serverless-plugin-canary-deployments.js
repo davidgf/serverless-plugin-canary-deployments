@@ -144,7 +144,8 @@ class ServerlessCanaryDeployments {
       'AWS::ApiGateway::Method': CfGenerators.apiGateway.replaceMethodUriWithAlias,
       'AWS::SNS::Topic': CfGenerators.sns.replaceTopicSubscriptionFunctionWithAlias,
       'AWS::S3::Bucket': CfGenerators.s3.replaceS3BucketFunctionWithAlias,
-      'AWS::Events::Rule': CfGenerators.cloudWatchEvents.replaceCloudWatchEventRuleTargetWithAlias
+      'AWS::Events::Rule': CfGenerators.cloudWatchEvents.replaceCloudWatchEventRuleTargetWithAlias,
+      'AWS::Logs::SubscriptionFilter': CfGenerators.cloudWatchLogs.replaceCloudWatchLogsDestinationArnWithAlias
     };
     const functionEvents = this.getEventsFor(functionName);
     const functionEventsEntries = _.entries(functionEvents);
@@ -161,7 +162,8 @@ class ServerlessCanaryDeployments {
     const snsTopics = this.getSnsTopicsFor(functionName);
     const s3Events = this.getS3EventsFor(functionName);
     const cloudWatchEvents = this.getCloudWatchEventsFor(functionName);
-    return Object.assign({}, apiGatewayMethods, eventSourceMappings, snsTopics, s3Events, cloudWatchEvents);
+    const cloudWatchLogs = this.getCloudWatchLogsFor(functionName);
+    return Object.assign({}, apiGatewayMethods, eventSourceMappings, snsTopics, s3Events, cloudWatchEvents, cloudWatchLogs);
   }
 
   getApiGatewayMethodsFor(functionName) {
@@ -212,6 +214,20 @@ class ServerlessCanaryDeployments {
     const isMappingForFunction = _.pipe(
       _.prop('Properties.Targets'),
       _.map(_.prop('Arn.Fn::GetAtt')),
+      _.flatten,
+      _.includes(functionName)
+    );
+    const getMappingsForFunction = _.pipe(
+      _.pickBy(isEventSourceMapping),
+      _.pickBy(isMappingForFunction)
+    );
+    return getMappingsForFunction(this.compiledTpl.Resources);
+  }
+
+  getCloudWatchLogsFor(functionName) {
+    const isEventSourceMapping = _.matchesProperty('Type', 'AWS::Logs::SubscriptionFilter');
+    const isMappingForFunction = _.pipe(
+      _.prop('Properties.DestinationArn.Fn::GetAtt'),
       _.flatten,
       _.includes(functionName)
     );
