@@ -106,7 +106,7 @@ For now, the plugin only works with Lambda functions invoked by
 * CloudWatch events
 * CloudWatch Logs
 
-More events will be added soon.
+[More events](https://serverless.com/framework/docs/providers/aws/events/) will be added soon.
 
 ## License
 
