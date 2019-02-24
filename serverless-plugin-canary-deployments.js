@@ -31,14 +31,11 @@ class ServerlessCanaryDeployments {
 
   get withDeploymentPreferencesFns () {
     const filter = (() => {
-      if (!this.hasDefaultPropertiesInGlobalSettings) {
-        return name => _.has('deploymentSettings', this.service.getFunction(name))
+      if (this.hasDefaultPropertiesInGlobalSettings) {
+        const ignoreFunctions = _.pathOr([], 'ignoreFunctions', this.globalSettings)
+        return name => ignoreFunctions.every(ignore => ignore !== name)
       }
-      const ignoreFunctions = _.pathOr([], 'ignoreFunctions', this.globalSettings)
-      if (ignoreFunctions.length > 0) {
-        return name => !_.includes(ignoreFunctions, name)
-      }
-      return name => true
+      return name => _.has('deploymentSettings', this.service.getFunction(name))
     })()
     return this.serverless.service.getAllFunctions().filter(filter)
   }
