@@ -328,9 +328,26 @@ class ServerlessCanaryDeployments {
     return _.head(_.keys(resource))
   }
 
+  validate (serverlessFunction, fnDeploymentSettings) {
+    if (!_.isString(fnDeploymentSettings.type)) {
+      throw new Error([
+        `Required field "type" is missing in deploymentSettings for ${serverlessFunction}.`,
+        "It should be added to global deploymentSettings or each function's deploymentSettings"
+      ].join(' '))
+    }
+    if (!_.isString(fnDeploymentSettings.alias)) {
+      throw new Error([
+        `Required field "alias" is missing in deploymentSettings for ${serverlessFunction}.`,
+        "It should be added to global deploymentSettings or each function's deploymentSettings"
+      ].join(' '))
+    }
+  }
+
   getDeploymentSettingsFor (serverlessFunction) {
     const fnDeploymentSetting = this.service.getFunction(serverlessFunction).deploymentSettings
-    return Object.assign({}, this.globalSettings, fnDeploymentSetting)
+    const mergedDeploymentSetting = Object.assign({}, this.globalSettings, fnDeploymentSetting)
+    this.validate(serverlessFunction, mergedDeploymentSetting)
+    return mergedDeploymentSetting
   }
 }
 

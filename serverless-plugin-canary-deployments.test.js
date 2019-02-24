@@ -44,4 +44,37 @@ describe('ServerlessCanaryDeployments', () => {
       })
     })
   })
+
+  describe('validate', () => {
+    let serverless
+    let plugin
+    beforeEach(() => {
+      serverless = new Serverless(options)
+      plugin = new ServerlessCanaryDeployments(serverless, options)
+    })
+
+    it('should NOT throw an error if function deploymentSettings has both type and alias', () => {
+      const deploymentSettings = {
+        type: 'type',
+        alias: 'alias'
+      }
+      expect(() => plugin.validate('func', deploymentSettings)).to.not.throw(Error)
+    })
+
+    it('should throw an error if type in function deploymentSettings is not a string', () => {
+      const deploymentSettings = {
+        type: undefined,
+        alias: 'alias'
+      }
+      expect(() => plugin.validate('func', deploymentSettings)).to.throw(Error)
+    })
+
+    it('should throw an error if alias in function deploymentSettings is not a string', () => {
+      const deploymentSettings = {
+        type: 'type',
+        alias: undefined
+      }
+      expect(() => plugin.validate('func', deploymentSettings)).to.throw(Error);
+    })
+  })
 })
