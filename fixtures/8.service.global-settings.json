@@ -1,0 +1,39 @@
+{
+  "service": "canary-deployments-test",
+  "custom": {
+    "deploymentSettings": {
+      "type": "Linear10PercentEvery1Minute",
+      "alias": "Live",
+      "alarms": [
+        "HelloFooAlarm"
+      ],
+      "ignoreFunctions": [
+        "preHook"
+      ]
+    }
+  },
+  "functions": {
+    "hello": {
+      "handler": "handler.hello",
+      "events": [
+        {
+          "http": "GET /hello"
+        }
+      ]
+    },
+    "world": {
+      "handler": "handler.world",
+      "events": [
+        {
+          "http": "GET /world"
+        }
+      ],
+      "deploymentSettings": {
+        "alias": "Override"
+      }
+    },
+    "preHook": {
+      "handler": "hooks.pre"
+    }
+  }
+}

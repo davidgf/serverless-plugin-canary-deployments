@@ -87,7 +87,9 @@ custom:
     stages:
       - dev
       - prod
-
+    ignoreFunctions: 
+      - preHook
+    type: Linear10PercentEvery2Minutes
 functions:
   ...
 ```
@@ -96,6 +98,8 @@ Some values are only available as top-level configurations.  They are:
 
 * `codeDeployRole`: (optional) an ARN specifying an existing IAM role for CodeDeploy.  If absent, one will be created for you.  See the [codeDeploy policy](./example-code-deploy-policy.json) for an example of what is needed.
 * `stages`: (optional) list of stages where you want to deploy your functions gradually. If not present, it assumes that are all of them.
+* `ignoreFunctions`: (optional) list of functions where you don't want to apply global settings. Usually, functions for `preTrafficHook` and/or `postTrafficHook` should be added to this list. Otherwise hook functions are also deployed gradually.
+ 
 
 ## <a name="how"></a>How it works
 

@@ -24,7 +24,20 @@ class ServerlessCanaryDeployments {
     return this.service.provider.compiledCloudFormationTemplate
   }
 
+  get hasDefaultPropertiesInGlobalSettings() {
+    return _.isObject(this.globalSettings) && Object.keys(this.globalSettings)
+      .some(name => name !== 'codeDeployRole' && name !== 'stages')
+  }
+
   get withDeploymentPreferencesFns () {
+    if (this.hasDefaultPropertiesInGlobalSettings) {
+      const ignoreFunctions = _.pathOr([], 'ignoreFunctions', this.globalSettings)
+      if (ignoreFunctions.length === 0) {
+        return this.serverless.service.getAllFunctions()
+      }
+      return this.serverless.service.getAllFunctions()
+        .filter(name => !_.includes(ignoreFunctions, name))
+    }
     return this.serverless.service.getAllFunctions()
       .filter(name => _.has('deploymentSettings', this.service.getFunction(name)))
   }
