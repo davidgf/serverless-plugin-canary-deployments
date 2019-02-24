@@ -16,23 +16,24 @@ describe('ServerlessCanaryDeployments', () => {
   const options = { stage };
 
   describe('addCanaryDeploymentResources', () => {
-    before(() => {
-      const testCaseFiles = fs.readdirSync(fixturesPath);
-      const getTestCaseName = _.pipe(_.split('.'), _.head);
-      const testCaseFileType = _.pipe(_.split('.'), _.get('[1]'));
-      const testCaseContentsFromFiles = _.reduce((acc, fileName) => {
-        const contents = JSON.parse(fs.readFileSync(path.resolve(fixturesPath, fileName)));
-        return _.set(testCaseFileType(fileName), contents, acc);
-      }, {});
-      const testCaseFilesByName = _.groupBy(getTestCaseName, testCaseFiles);
-      this.testCases = _.map(
-        caseName => testCaseContentsFromFiles(testCaseFilesByName[caseName]),
-        Object.keys(testCaseFilesByName)
-      );
-    });
+    const testCaseFiles = fs.readdirSync(fixturesPath);
+    const getTestCaseName = _.pipe(_.split('.'), _.head);
+    const testCaseFileType = _.pipe(_.split('.'), _.get('[1]'));
+    const testCaseContentsFromFiles = _.reduce((acc, fileName) => {
+      const contents = JSON.parse(fs.readFileSync(path.resolve(fixturesPath, fileName)));
+      return _.set(testCaseFileType(fileName), contents, acc);
+    }, {});
+    const testCaseFilesByName = _.groupBy(getTestCaseName, testCaseFiles);
+    this.testCases = _.map(
+      (caseName) => {
+        const testCaseContents = testCaseContentsFromFiles(testCaseFilesByName[caseName]);
+        return Object.assign(testCaseContents, {caseName});
+      },
+      Object.keys(testCaseFilesByName)
+    );
 
-    it('generates the correct CloudFormation templates', () => {
-      this.testCases.forEach(({ input, output, service }) => {
+    this.testCases.forEach(({ caseName, input, output, service }) => {
+      it(`generates the correct CloudFormation templates: test case ${caseName}`, () => {
         const serverless = new Serverless(options);
         Object.assign(serverless.service, service);
         serverless.service.provider.compiledCloudFormationTemplate = input;
