@@ -328,14 +328,14 @@ class ServerlessCanaryDeployments {
   validate (serverlessFunction, fnDeploymentSettings) {
     if (!_.isString(fnDeploymentSettings.type)) {
       throw new Error([
-        `Required field "type" is missing in deploymentSettings for ${serverlessFunction}.`,
-        "It should be added to global deploymentSettings or each function's deploymentSettings"
+        `Required string field "type" is missing in deploymentSettings for ${serverlessFunction}.`,
+        "It should be added to global deploymentSettings or each function's deploymentSettings."
       ].join(' '))
     }
     if (!_.isString(fnDeploymentSettings.alias)) {
       throw new Error([
-        `Required field "alias" is missing in deploymentSettings for ${serverlessFunction}.`,
-        "It should be added to global deploymentSettings or each function's deploymentSettings"
+        `Required string field "alias" is missing in deploymentSettings for ${serverlessFunction}.`,
+        "It should be added to global deploymentSettings or each function's deploymentSettings."
       ].join(' '))
     }
   }
