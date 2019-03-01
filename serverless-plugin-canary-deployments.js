@@ -143,6 +143,7 @@ class ServerlessCanaryDeployments {
       'AWS::Lambda::EventSourceMapping': CfGenerators.lambda.replaceEventMappingFunctionWithAlias,
       'AWS::ApiGateway::Method': CfGenerators.apiGateway.replaceMethodUriWithAlias,
       'AWS::SNS::Topic': CfGenerators.sns.replaceTopicSubscriptionFunctionWithAlias,
+      'AWS::SNS::Subscription': CfGenerators.sns.replaceSubscriptionFunctionWithAlias,
       'AWS::S3::Bucket': CfGenerators.s3.replaceS3BucketFunctionWithAlias,
       'AWS::Events::Rule': CfGenerators.cloudWatchEvents.replaceCloudWatchEventRuleTargetWithAlias
     };
@@ -159,9 +160,10 @@ class ServerlessCanaryDeployments {
     const apiGatewayMethods = this.getApiGatewayMethodsFor(functionName);
     const eventSourceMappings = this.getEventSourceMappingsFor(functionName);
     const snsTopics = this.getSnsTopicsFor(functionName);
+    const snsSubscriptions = this.getSnsSubscriptionsFor(functionName);
     const s3Events = this.getS3EventsFor(functionName);
     const cloudWatchEvents = this.getCloudWatchEventsFor(functionName);
-    return Object.assign({}, apiGatewayMethods, eventSourceMappings, snsTopics, s3Events, cloudWatchEvents);
+    return Object.assign({}, apiGatewayMethods, eventSourceMappings, snsTopics, snsSubscriptions, s3Events, cloudWatchEvents);
   }
 
   getApiGatewayMethodsFor(functionName) {
@@ -207,6 +209,21 @@ class ServerlessCanaryDeployments {
     return getMappingsForFunction(this.compiledTpl.Resources);
   }
 
+  getSnsSubscriptionsFor(functionName) {
+    const isEventSourceMapping = (value) => {
+      const match = _.matchesProperty('Type', 'AWS::SNS::Subscription')(value);
+      return match;
+    };
+    const isSubscriptionForFunction = (value) => {
+      const match = _.matchesProperty('Properties.Endpoint.Fn::GetAtt[0]', functionName)(value);
+      return match;
+    };
+    const getMappingsForFunction = _.pipe(
+      _.pickBy(isEventSourceMapping),
+      _.pickBy(isSubscriptionForFunction)
+    );
+    return getMappingsForFunction(this.compiledTpl.Resources);
+  }
   getCloudWatchEventsFor(functionName) {
     const isEventSourceMapping = _.matchesProperty('Type', 'AWS::Events::Rule');
     const isMappingForFunction = _.pipe(

@@ -1,0 +1,260 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "The AWS CloudFormation template for this Serverless application",
+  "Resources": {
+    "ServerlessDeploymentBucket": {
+      "Type": "AWS::S3::Bucket"
+    },
+    "HelloLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/canary-deployments-test-dev-hello"
+      }
+    },
+    "PreHookLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/canary-deployments-test-dev-preHook"
+      }
+    },
+    "PostHookLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/canary-deployments-test-dev-postHook"
+      }
+    },
+    "IamRoleLambdaExecution": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": ["lambda.amazonaws.com"]
+              },
+              "Action": ["sts:AssumeRole"]
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": {
+              "Fn::Join": ["-", ["dev", "canary-deployments-test", "lambda"]]
+            },
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": ["logs:CreateLogStream"],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/canary-deployments-test-dev-hello:*"
+                    },
+                    {
+                      "Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/canary-deployments-test-dev-preHook:*"
+                    },
+                    {
+                      "Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/canary-deployments-test-dev-postHook:*"
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": ["logs:PutLogEvents"],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/canary-deployments-test-dev-hello:*:*"
+                    },
+                    {
+                      "Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/canary-deployments-test-dev-preHook:*:*"
+                    },
+                    {
+                      "Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/canary-deployments-test-dev-postHook:*:*"
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": ["codedeploy:*"],
+                  "Resource": ["*"]
+                }
+              ]
+            }
+          }
+        ],
+        "Path": "/",
+        "RoleName": {
+          "Fn::Join": [
+            "-",
+            ["canary-deployments-test", "dev", "us-east-1", "lambdaRole"]
+          ]
+        }
+      }
+    },
+    "BelloLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/canary-deployments-test/dev/1520191533287-2018-03-04T19:25:33.287Z/canary-deployments-test.zip"
+        },
+        "FunctionName": "canary-deployments-test-dev-hello",
+        "Handler": "handler.hello",
+        "MemorySize": 1024,
+        "Role": {
+          "Fn::GetAtt": ["IamRoleLambdaExecution", "Arn"]
+        },
+        "Runtime": "nodejs6.10",
+        "Timeout": 6
+      },
+      "DependsOn": ["HelloLogGroup", "IamRoleLambdaExecution"]
+    },
+    "BelloLambdaVersionFYAirphUvjV7H12yGxU1eQrqAiSBMjAi9hdLPgV62L8": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "BelloLambdaFunction"
+        },
+        "CodeSha256": "sZvdDgxnAbKe1yaQga0XJPD82+o5jFWz+J3lR+q9UHU="
+      }
+    },
+    "PreHookLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/canary-deployments-test/dev/1520191533287-2018-03-04T19:25:33.287Z/canary-deployments-test.zip"
+        },
+        "FunctionName": "canary-deployments-test-dev-preHook",
+        "Handler": "hooks.pre",
+        "MemorySize": 1024,
+        "Role": {
+          "Fn::GetAtt": ["IamRoleLambdaExecution", "Arn"]
+        },
+        "Runtime": "nodejs6.10",
+        "Timeout": 6
+      },
+      "DependsOn": ["PreHookLogGroup", "IamRoleLambdaExecution"]
+    },
+    "PreHookLambdaVersionIYyrXlfQM5jjU68REvnAzRxhgq9eoLqSsDjy0": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "PreHookLambdaFunction"
+        },
+        "CodeSha256": "sZvdDgxnAbKe1yaQga0XJPD82+o5jFWz+J3lR+q9UHU="
+      }
+    },
+    "PostHookLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/canary-deployments-test/dev/1520191533287-2018-03-04T19:25:33.287Z/canary-deployments-test.zip"
+        },
+        "FunctionName": "canary-deployments-test-dev-postHook",
+        "Handler": "hooks.post",
+        "MemorySize": 1024,
+        "Role": {
+          "Fn::GetAtt": ["IamRoleLambdaExecution", "Arn"]
+        },
+        "Runtime": "nodejs6.10",
+        "Timeout": 6
+      },
+      "DependsOn": ["PostHookLogGroup", "IamRoleLambdaExecution"]
+    },
+    "PostHookLambdaVersiondh0VUUAh9BrmvORqx3vDEIcHxolKWKCO1YL45mVTbg": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "PostHookLambdaFunction"
+        },
+        "CodeSha256": "sZvdDgxnAbKe1yaQga0XJPD82+o5jFWz+J3lR+q9UHU="
+      }
+    },
+    "BelloLambdahelloEventStream": {
+      "Type": "AWS::SNS::Subscription",
+      "Properties": {
+        "TopicArn": {
+          "Ref": "helloEventStream"
+        },
+        "Protocol": "lambda",
+        "Endpoint": {
+          "Fn::GetAtt": ["BelloLambdaFunction", "Arn"]
+        },
+        "FilterPolicy": {
+          "eventType": ["HelloEvent"]
+        }
+      }
+    },
+    "BelloLambdaPermissionhelloEventStreamSNS": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "BelloLambdaFunction",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": {
+          "Fn::Join": [
+            "",
+            [
+              "sns.",
+              {
+                "Ref": "AWS::URLSuffix"
+              }
+            ]
+          ]
+        },
+        "SourceArn": {
+          "Ref": "helloEventStream"
+        }
+      }
+    }
+  },
+  "helloEventStream": {
+    "Type": "AWS::SNS::Topic",
+    "Properties": {
+      "TopicName": "helloEventStream"
+    }
+  },
+  "Outputs": {
+    "ServerlessDeploymentBucketName": {
+      "Value": {
+        "Ref": "ServerlessDeploymentBucket"
+      }
+    },
+    "BelloLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "BelloLambdaVersionFYAirphUvjV7H12yGxU1eQrqAiSBMjAi9hdLPgV62L8"
+      }
+    },
+    "PreHookLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "PreHookLambdaVersionIYyrXlfQM5jjU68REvnAzRxhgq9eoLqSsDjy0"
+      }
+    },
+    "PostHookLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "PostHookLambdaVersiondh0VUUAh9BrmvORqx3vDEIcHxolKWKCO1YL45mVTbg"
+      }
+    }
+  }
+}
