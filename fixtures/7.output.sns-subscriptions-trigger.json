@@ -192,7 +192,7 @@
         },
         "Protocol": "lambda",
         "Endpoint": {
-          "Fn::GetAtt": ["BelloLambdaFunctionAliasLive", "Arn"]
+          "Ref": "BelloLambdaFunctionAliasLive"
         },
         "FilterPolicy": {
           "eventType": ["HelloEvent"]
