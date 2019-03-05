@@ -24,7 +24,7 @@ $ curl https://yourendpoint.com/dev/hello
 {"message":"First version"}
 ```
 
-To check how traffic is shifted gradually, modify `handler.js` and deploy your service again. You'll see that the output varies accross endpoint calls.
+To check how traffic is shifted gradually, modify `handler.js` and deploy your service again. You'll see that the output varies across endpoint calls.
 
 ```console
 $ sls deploy -s dev
