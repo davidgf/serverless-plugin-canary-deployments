@@ -12,10 +12,14 @@
       "handler": "handler.bello",
       "events": [
         {
-          "schedule": {
-            "name": "test-scheduled-event",
-            "rate": "rate(1 minute)",
-            "enabled": true
+          "sns": {
+            "topicName": "fooTopic",
+            "displayName": "fooTopic",
+            "filterPolicy": {
+              "eventType": [
+                "FooEvent"
+              ]
+            }
           }
         }
       ],
