@@ -221,20 +221,15 @@ class ServerlessCanaryDeployments {
   }
 
   getSnsSubscriptionsFor(functionName) {
-    const isEventSourceMapping = (value) => {
-      const match = _.matchesProperty('Type', 'AWS::SNS::Subscription')(value);
-      return match;
-    };
-    const isSubscriptionForFunction = (value) => {
-      const match = _.matchesProperty('Properties.Endpoint.Fn::GetAtt[0]', functionName)(value);
-      return match;
-    };
+    const isEventSourceMapping = _.matchesProperty('Type', 'AWS::SNS::Subscription');
+    const isSubscriptionForFunction = _.matchesProperty('Properties.Endpoint.Fn::GetAtt[0]', functionName);
     const getMappingsForFunction = _.pipe(
       _.pickBy(isEventSourceMapping),
       _.pickBy(isSubscriptionForFunction)
     );
     return getMappingsForFunction(this.compiledTpl.Resources);
   }
+
   getCloudWatchEventsFor(functionName) {
     const isEventSourceMapping = _.matchesProperty('Type', 'AWS::Events::Rule');
     const isMappingForFunction = _.pipe(
