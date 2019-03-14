@@ -1,0 +1,43 @@
+{
+  "service": "canary-deployments-test",
+  "custom": {
+    "deploymentSettings": {
+      "stages": [
+        "dev"
+      ]
+    }
+  },
+  "functions": {
+    "bello": {
+      "handler": "handler.bello",
+      "events": [
+        {
+          "sns": {
+            "topicName": "fooTopic",
+            "displayName": "fooTopic",
+            "filterPolicy": {
+              "eventType": [
+                "FooEvent"
+              ]
+            }
+          }
+        }
+      ],
+      "deploymentSettings": {
+        "type": "Linear10PercentEvery1Minute",
+        "alias": "Live",
+        "preTrafficHook": "preHook",
+        "postTrafficHook": "postHook",
+        "alarms": [
+          "BelloFooAlarm"
+        ]
+      }
+    },
+    "preHook": {
+      "handler": "hooks.pre"
+    },
+    "postHook": {
+      "handler": "hooks.post"
+    }
+  }
+}
