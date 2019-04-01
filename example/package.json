@@ -14,8 +14,8 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "package": "npm un --no-save serverless-plugin-canary-deployments && npm pack ../ && npm i --no-save serverless-plugin-canary-deployments-0.4.2.tgz && sls package -s dev",
-    "deploy": "npm un --no-save serverless-plugin-canary-deployments && npm pack ../ && npm i --no-save serverless-plugin-canary-deployments-0.4.2.tgz && sls deploy -s dev",
+    "package": "npm un --no-save serverless-plugin-canary-deployments && npm pack ../ && npm i --no-save serverless-plugin-canary-deployments-0.4.6.tgz && sls package -s dev",
+    "deploy": "npm un --no-save serverless-plugin-canary-deployments && npm pack ../ && npm i --no-save serverless-plugin-canary-deployments-0.4.6.tgz && sls deploy -s dev",
     "populate-table": "node ./scripts/populate-test-table"
   },
   "author": "",

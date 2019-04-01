@@ -33,6 +33,16 @@ functions:
               - StreamsTestTable
               - StreamArn
       - sns: snsTopic
+      - sns:
+          topicName: fooTopic
+          displayName: fooTopic
+          filterPolicy:
+            eventType:
+              - FooEvent
+      - schedule:
+          rate: rate(1 minute)
+          enabled: false
+      - cloudwatchLog: "/aws/lambda/sls-wshop-dev-hello"
       # - s3: s3samplebucket
     alarms:
       - name: foo
