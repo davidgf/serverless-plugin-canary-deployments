@@ -7,8 +7,9 @@
   "description": "A Serverless plugin to implement canary deployment of Lambda functions",
   "main": "serverless-plugin-canary-deployments.js",
   "scripts": {
-    "test": "NODE_ENV=test ./node_modules/mocha/bin/mocha $(find ./ -name '*.test.js' -not -path '.*/node_modules/*')",
-    "watch": "NODE_ENV=test ./node_modules/mocha/bin/mocha -w $(find ./ -name '*.test.js' -not -path '*/node_modules/*')"
+    "test": "npm run lint && NODE_ENV=test ./node_modules/mocha/bin/mocha $(find ./ -name '*.test.js' -not -path '.*/node_modules/*')",
+    "watch": "NODE_ENV=test ./node_modules/mocha/bin/mocha -w $(find ./ -name '*.test.js' -not -path '*/node_modules/*')",
+    "lint": "standard"
   },
   "author": "David García <davidgf1987@gmail.com>",
   "contributors": [
@@ -27,14 +28,10 @@
   },
   "devDependencies": {
     "chai": "^4.2.0",
-    "eslint": "^4.19.1",
-    "eslint-config-airbnb": "^16.1.0",
-    "eslint-plugin-import": "^2.14.0",
-    "eslint-plugin-jsx-a11y": "^6.1.2",
-    "eslint-plugin-react": "^7.11.1",
     "get-installed-path": "^4.0.8",
     "mocha": "^5.2.0",
-    "serverless": "^1.32.0"
+    "serverless": "^1.32.0",
+    "standard": "*"
   },
   "peerDependencies": {
     "serverless": ">= 1.26.0"
@@ -46,5 +43,16 @@
     "canary",
     "gradual",
     "deployments"
-  ]
+  ],
+  "standard": {
+    "globals": [
+      "describe",
+      "context",
+      "it",
+      "before",
+      "after",
+      "beforeEach",
+      "afterEach"
+    ]
+  }
 }
