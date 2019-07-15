@@ -30,7 +30,7 @@
     "chai": "^4.2.0",
     "get-installed-path": "^4.0.8",
     "mocha": "^5.2.0",
-    "serverless": "^1.32.0",
+    "serverless": "^1.47.0",
     "standard": "*"
   },
   "peerDependencies": {
