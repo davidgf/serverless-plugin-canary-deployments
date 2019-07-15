@@ -69,6 +69,7 @@ You can see a working example in the [example folder](./example/).
   - `Linear10PercentEvery2Minutes`: shifts 10 percent of traffic every two minutes until all traffic is shifted.
   - `Linear10PercentEvery3Minutes`: shifts 10 percent of traffic every three minutes until all traffic is shifted.
   - `Linear10PercentEvery10Minutes`: shifts 10 percent of traffic every 10 minutes until all traffic is shifted.
+  - `AllAtOnce`: shifts all the traffic to the new version, useful when you only need to execute the validation hooks.
 * `alias`: (required) name that will be used to create the Lambda function alias.
 * `preTrafficHook`: (optional) validation Lambda function that runs before traffic shifting. It must use te CodeDeploy SDK to notify about this step's success or failure (more info [here](https://docs.aws.amazon.com/codedeploy/latest/userguide/reference-appspec-file-structure-hooks.html)).
 * `postTrafficHook`: (optional) validation Lambda function that runs after traffic shifting. It must use te CodeDeploy SDK to notify about this step's success or failure (more info [here](https://docs.aws.amazon.com/codedeploy/latest/userguide/reference-appspec-file-structure-hooks.html))
@@ -109,7 +110,7 @@ The plugin relies on the [AWS Lambda traffic shifting feature](https://docs.aws.
 For now, the plugin only works with Lambda functions invoked by
 
 * API Gateway
-* Stream based (such as the triggered by Kinesis or DynamoDB Streams)
+* Stream based (such as the triggered by Kinesis, DynamoDB Streams or SQS)
 * SNS based events
 * S3 events
 * CloudWatch Scheduled events

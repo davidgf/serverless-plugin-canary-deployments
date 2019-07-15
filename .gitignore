@@ -3,3 +3,4 @@ node_modules
 .serverless_plugins
 mappings.json
 serverless-plugin-canary-deployments*.tgz
+.vscode 
