@@ -24,7 +24,7 @@ class ServerlessCanaryDeployments {
     return this.service.provider.compiledCloudFormationTemplate
   }
 
-  get hasDefaultPropertiesInGlobalSettings() {
+  get hasDefaultPropertiesInGlobalSettings () {
     return _.isObject(this.globalSettings) && Object.keys(this.globalSettings)
       .some(name => name !== 'codeDeployRole' && name !== 'stages')
   }

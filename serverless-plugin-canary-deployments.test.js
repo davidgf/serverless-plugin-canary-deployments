@@ -74,7 +74,7 @@ describe('ServerlessCanaryDeployments', () => {
         type: 'type',
         alias: undefined
       }
-      expect(() => plugin.validate('func', deploymentSettings)).to.throw(Error);
+      expect(() => plugin.validate('func', deploymentSettings)).to.throw(Error)
     })
   })
 })
