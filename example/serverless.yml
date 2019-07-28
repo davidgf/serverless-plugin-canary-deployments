@@ -2,7 +2,7 @@ service: canary-deployments-test
 
 provider:
   name: aws
-  runtime: nodejs6.10
+  runtime: nodejs10.x
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -43,7 +43,13 @@ functions:
           rate: rate(1 minute)
           enabled: false
       - cloudwatchLog: "/aws/lambda/sls-wshop-dev-hello"
-      # - s3: s3samplebucket
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - MyQueue
+              - Arn
+      - iot:
+          sql: "SELECT * FROM 'some_topic'"
     alarms:
       - name: foo
         namespace: 'AWS/Lambda'
@@ -82,3 +88,8 @@ resources:
           WriteCapacityUnits: 1
         StreamSpecification:
           StreamViewType: NEW_AND_OLD_IMAGES
+    MyQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        DelaySeconds: 0
+        VisibilityTimeout: 120
