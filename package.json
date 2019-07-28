@@ -29,6 +29,7 @@
   "devDependencies": {
     "chai": "^4.2.0",
     "get-installed-path": "^4.0.8",
+    "husky": "^3.0.1",
     "mocha": "^5.2.0",
     "serverless": "^1.47.0",
     "standard": "*"
@@ -44,6 +45,11 @@
     "gradual",
     "deployments"
   ],
+  "husky": {
+    "hooks": {
+      "pre-push": "npm test"
+    }
+  },
   "standard": {
     "globals": [
       "describe",
