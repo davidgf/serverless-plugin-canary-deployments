@@ -48,6 +48,8 @@ functions:
             Fn::GetAtt:
               - MyQueue
               - Arn
+      - iot:
+          sql: "SELECT * FROM 'some_topic'"
     alarms:
       - name: foo
         namespace: 'AWS/Lambda'

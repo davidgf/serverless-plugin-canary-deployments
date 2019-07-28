@@ -146,7 +146,8 @@ class ServerlessCanaryDeployments {
       'AWS::SNS::Subscription': CfGenerators.sns.replaceSubscriptionFunctionWithAlias,
       'AWS::S3::Bucket': CfGenerators.s3.replaceS3BucketFunctionWithAlias,
       'AWS::Events::Rule': CfGenerators.cloudWatchEvents.replaceCloudWatchEventRuleTargetWithAlias,
-      'AWS::Logs::SubscriptionFilter': CfGenerators.cloudWatchLogs.replaceCloudWatchLogsDestinationArnWithAlias
+      'AWS::Logs::SubscriptionFilter': CfGenerators.cloudWatchLogs.replaceCloudWatchLogsDestinationArnWithAlias,
+      'AWS::IoT::TopicRule': CfGenerators.iot.replaceIotTopicRuleActionArnWithAlias
     }
     const functionEvents = this.getEventsFor(functionName)
     const functionEventsEntries = _.entries(functionEvents)
@@ -165,6 +166,7 @@ class ServerlessCanaryDeployments {
     const s3Events = this.getS3EventsFor(functionName)
     const cloudWatchEvents = this.getCloudWatchEventsFor(functionName)
     const cloudWatchLogs = this.getCloudWatchLogsFor(functionName)
+    const iotTopicRules = this.getIotTopicRulesFor(functionName)
     return Object.assign(
       {},
       apiGatewayMethods,
@@ -173,7 +175,8 @@ class ServerlessCanaryDeployments {
       s3Events,
       cloudWatchEvents,
       cloudWatchLogs,
-      snsSubscriptions
+      snsSubscriptions,
+      iotTopicRules
     )
   }
 
@@ -206,7 +209,7 @@ class ServerlessCanaryDeployments {
   }
 
   getSnsTopicsFor (functionName) {
-    const isEventSourceMapping = _.matchesProperty('Type', 'AWS::SNS::Topic')
+    const isSnsTopic = _.matchesProperty('Type', 'AWS::SNS::Topic')
     const isMappingForFunction = _.pipe(
       _.prop('Properties.Subscription'),
       _.map(_.prop('Endpoint.Fn::GetAtt')),
@@ -214,62 +217,75 @@ class ServerlessCanaryDeployments {
       _.includes(functionName)
     )
     const getMappingsForFunction = _.pipe(
-      _.pickBy(isEventSourceMapping),
+      _.pickBy(isSnsTopic),
       _.pickBy(isMappingForFunction)
     )
     return getMappingsForFunction(this.compiledTpl.Resources)
   }
 
   getSnsSubscriptionsFor (functionName) {
-    const isEventSourceMapping = _.matchesProperty('Type', 'AWS::SNS::Subscription')
+    const isSnsSubscription = _.matchesProperty('Type', 'AWS::SNS::Subscription')
     const isSubscriptionForFunction = _.matchesProperty('Properties.Endpoint.Fn::GetAtt[0]', functionName)
     const getMappingsForFunction = _.pipe(
-      _.pickBy(isEventSourceMapping),
+      _.pickBy(isSnsSubscription),
       _.pickBy(isSubscriptionForFunction)
     )
     return getMappingsForFunction(this.compiledTpl.Resources)
   }
 
   getCloudWatchEventsFor (functionName) {
-    const isEventSourceMapping = _.matchesProperty('Type', 'AWS::Events::Rule')
-    const isMappingForFunction = _.pipe(
+    const isCloudWatchEvent = _.matchesProperty('Type', 'AWS::Events::Rule')
+    const isCwEventForFunction = _.pipe(
       _.prop('Properties.Targets'),
       _.map(_.prop('Arn.Fn::GetAtt')),
       _.flatten,
       _.includes(functionName)
     )
     const getMappingsForFunction = _.pipe(
-      _.pickBy(isEventSourceMapping),
-      _.pickBy(isMappingForFunction)
+      _.pickBy(isCloudWatchEvent),
+      _.pickBy(isCwEventForFunction)
     )
     return getMappingsForFunction(this.compiledTpl.Resources)
   }
 
   getCloudWatchLogsFor (functionName) {
-    const isEventSourceMapping = _.matchesProperty('Type', 'AWS::Logs::SubscriptionFilter')
-    const isMappingForFunction = _.pipe(
+    const isLogSubscription = _.matchesProperty('Type', 'AWS::Logs::SubscriptionFilter')
+    const isLogSubscriptionForFn = _.pipe(
       _.prop('Properties.DestinationArn.Fn::GetAtt'),
       _.flatten,
       _.includes(functionName)
     )
     const getMappingsForFunction = _.pipe(
-      _.pickBy(isEventSourceMapping),
-      _.pickBy(isMappingForFunction)
+      _.pickBy(isLogSubscription),
+      _.pickBy(isLogSubscriptionForFn)
     )
     return getMappingsForFunction(this.compiledTpl.Resources)
   }
 
   getS3EventsFor (functionName) {
-    const isEventSourceMapping = _.matchesProperty('Type', 'AWS::S3::Bucket')
-    const isMappingForFunction = _.pipe(
+    const isS3Event = _.matchesProperty('Type', 'AWS::S3::Bucket')
+    const isS3EventForFunction = _.pipe(
       _.prop('Properties.NotificationConfiguration.LambdaConfigurations'),
       _.map(_.prop('Function.Fn::GetAtt')),
       _.flatten,
       _.includes(functionName)
     )
     const getMappingsForFunction = _.pipe(
-      _.pickBy(isEventSourceMapping),
-      _.pickBy(isMappingForFunction)
+      _.pickBy(isS3Event),
+      _.pickBy(isS3EventForFunction)
+    )
+    return getMappingsForFunction(this.compiledTpl.Resources)
+  }
+
+  getIotTopicRulesFor (functionName) {
+    const isIotTopicRule = _.matchesProperty('Type', 'AWS::IoT::TopicRule')
+    const isIotTopicRuleForFunction = _.matchesProperty(
+      'Properties.TopicRulePayload.Actions[0].Lambda.FunctionArn.Fn::GetAtt[0]',
+      functionName
+    )
+    const getMappingsForFunction = _.pipe(
+      _.pickBy(isIotTopicRule),
+      _.pickBy(isIotTopicRuleForFunction)
     )
     return getMappingsForFunction(this.compiledTpl.Resources)
   }
