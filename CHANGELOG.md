@@ -1,5 +1,12 @@
+# 0.4.8 (28.07.2019)
+- Add support for IoT rules
+
+# 0.4.7 (01.04.2019)
+- Add support for CloudWatch Logs events
+- Add support for SNS Subscriptions with filter policies
+
 # 0.4.6 (14.02.2019)
-- Add support for CloudWatchEvents
+- Add support for CloudWatch Events
 
 # 0.4.5 (14.01.2019)
 - Allow configuring CodeDeploy triggers
