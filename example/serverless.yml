@@ -25,6 +25,8 @@ functions:
   hello:
     handler: handler.hello
     events:
+      - websocket:
+          route: $default
       - http: GET hello
       - stream:
           type: dynamodb

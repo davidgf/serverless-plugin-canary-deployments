@@ -142,6 +142,7 @@ class ServerlessCanaryDeployments {
     const replaceAliasStrategy = {
       'AWS::Lambda::EventSourceMapping': CfGenerators.lambda.replaceEventMappingFunctionWithAlias,
       'AWS::ApiGateway::Method': CfGenerators.apiGateway.replaceMethodUriWithAlias,
+      'AWS::ApiGatewayV2::Integration': CfGenerators.apiGateway.replaceV2IntegrationUriWithAlias,
       'AWS::SNS::Topic': CfGenerators.sns.replaceTopicSubscriptionFunctionWithAlias,
       'AWS::SNS::Subscription': CfGenerators.sns.replaceSubscriptionFunctionWithAlias,
       'AWS::S3::Bucket': CfGenerators.s3.replaceS3BucketFunctionWithAlias,
@@ -160,6 +161,7 @@ class ServerlessCanaryDeployments {
 
   getEventsFor (functionName) {
     const apiGatewayMethods = this.getApiGatewayMethodsFor(functionName)
+    const apiGatewayV2Methods = this.getApiGatewayV2MethodsFor(functionName)
     const eventSourceMappings = this.getEventSourceMappingsFor(functionName)
     const snsTopics = this.getSnsTopicsFor(functionName)
     const snsSubscriptions = this.getSnsSubscriptionsFor(functionName)
@@ -170,6 +172,7 @@ class ServerlessCanaryDeployments {
     return Object.assign(
       {},
       apiGatewayMethods,
+      apiGatewayV2Methods,
       eventSourceMappings,
       snsTopics,
       s3Events,
@@ -184,6 +187,20 @@ class ServerlessCanaryDeployments {
     const isApiGMethod = _.matchesProperty('Type', 'AWS::ApiGateway::Method')
     const isMethodForFunction = _.pipe(
       _.prop('Properties.Integration'),
+      flattenObject,
+      _.includes(functionName)
+    )
+    const getMethodsForFunction = _.pipe(
+      _.pickBy(isApiGMethod),
+      _.pickBy(isMethodForFunction)
+    )
+    return getMethodsForFunction(this.compiledTpl.Resources)
+  }
+
+  getApiGatewayV2MethodsFor (functionName) {
+    const isApiGMethod = _.matchesProperty('Type', 'AWS::ApiGatewayV2::Integration')
+    const isMethodForFunction = _.pipe(
+      _.prop('Properties.IntegrationUri'),
       flattenObject,
       _.includes(functionName)
     )
