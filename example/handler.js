@@ -9,3 +9,14 @@ module.exports.hello = (event, context, callback) => {
   }
   return callback(null, response)
 }
+
+module.exports.authorize = (event, context, callback) => {
+  console.log('The first authroizer')
+  const response = {
+    statusCode: 200,
+    body: JSON.stringify({
+      message: 'The first authorizer version'
+    })
+  }
+  return callback(null, response)
+}
