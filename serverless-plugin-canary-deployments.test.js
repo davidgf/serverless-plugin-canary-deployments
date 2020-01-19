@@ -20,17 +20,18 @@ describe('ServerlessCanaryDeployments', () => {
     const getTestCaseName = _.pipe(_.split('.'), _.head)
     const testCaseFileType = _.pipe(_.split('.'), _.get('[1]'))
     const testCaseContentsFromFiles = _.reduce((acc, fileName) => {
-      const contents = JSON.parse(fs.readFileSync(path.resolve(fixturesPath, fileName)))
+      const contents = JSON.parse(
+        fs.readFileSync(path.resolve(fixturesPath, fileName))
+      )
       return _.set(testCaseFileType(fileName), contents, acc)
     }, {})
     const testCaseFilesByName = _.groupBy(getTestCaseName, testCaseFiles)
-    this.testCases = _.map(
-      (caseName) => {
-        const testCaseContents = testCaseContentsFromFiles(testCaseFilesByName[caseName])
-        return Object.assign(testCaseContents, { caseName })
-      },
-      Object.keys(testCaseFilesByName)
-    )
+    this.testCases = _.map(caseName => {
+      const testCaseContents = testCaseContentsFromFiles(
+        testCaseFilesByName[caseName]
+      )
+      return Object.assign(testCaseContents, { caseName })
+    }, Object.keys(testCaseFilesByName))
 
     this.testCases.forEach(({ caseName, input, output, service }) => {
       it(`generates the correct CloudFormation templates: test case ${caseName}`, () => {
@@ -40,7 +41,18 @@ describe('ServerlessCanaryDeployments', () => {
         serverless.setProvider('aws', new AwsProvider(serverless, options))
         const plugin = new ServerlessCanaryDeployments(serverless, options)
         plugin.addCanaryDeploymentResources()
-        expect(serverless.service.provider.compiledCloudFormationTemplate).to.deep.equal(output)
+        if (parseInt(caseName, 10) > 10) {
+          fs.writeFileSync(
+            `${__dirname}/output.${caseName}.json`,
+            JSON.stringify(
+              serverless.service.provider.compiledCloudFormationTemplate
+            ),
+            { encoding: 'utf-8' }
+          )
+        }
+        expect(
+          serverless.service.provider.compiledCloudFormationTemplate
+        ).to.deep.equal(output)
       })
     })
   })

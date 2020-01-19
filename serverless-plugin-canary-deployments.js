@@ -79,9 +79,6 @@ class ServerlessCanaryDeployments {
   buildFunctionResources (serverlessFnName) {
     const functionName = this.naming.getLambdaLogicalId(serverlessFnName)
     const deploymentSettings = this.getDeploymentSettingsFor(serverlessFnName)
-    // InventoryProvConcLambdaAlias we have to remove that
-    // we need to set dependency on InventoryLambdaFunction
-    // permission needs removing InventoryLambdaPermissionApiGateway
     const deploymentGrTpl = this.buildFunctionDeploymentGroup({
       deploymentSettings,
       functionName
@@ -107,12 +104,21 @@ class ServerlessCanaryDeployments {
       functionAlias
     })
 
+    this.clearServerlessAlias({ functionName, provisionedConcurrency })
+
     return [
       deploymentGrTpl,
       aliasTpl,
       ...lambdaPermissions,
       ...eventsWithAlias
     ]
+  }
+
+  clearServerlessAlias ({ functionName, provisionedConcurrency }) {
+    if (provisionedConcurrency) {
+      // https://github.com/serverless/serverless/blob/9591d5a232c641155613d23b0f88ca05ea51b436/lib/plugins/aws/lib/naming.js#L176
+      delete this.compiledTpl.Resources[`${functionName}ProvConcLambdaAlias`]
+    }
   }
 
   buildCodeDeployApp () {
