@@ -200,7 +200,6 @@ class ServerlessCanaryDeployments {
         template,
         functionAlias
       )
-      // todo: maybe we need to check that is provisioned dependson
       if (provisionedConcurrency) {
         templateWithAlias = CfGenerators.lambda.removeProvisionAlias(
           templateWithAlias

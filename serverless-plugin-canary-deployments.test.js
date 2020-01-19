@@ -41,15 +41,6 @@ describe('ServerlessCanaryDeployments', () => {
         serverless.setProvider('aws', new AwsProvider(serverless, options))
         const plugin = new ServerlessCanaryDeployments(serverless, options)
         plugin.addCanaryDeploymentResources()
-        if (parseInt(caseName, 10) > 10) {
-          fs.writeFileSync(
-            `${__dirname}/output.${caseName}.json`,
-            JSON.stringify(
-              serverless.service.provider.compiledCloudFormationTemplate
-            ),
-            { encoding: 'utf-8' }
-          )
-        }
         expect(
           serverless.service.provider.compiledCloudFormationTemplate
         ).to.deep.equal(output)
