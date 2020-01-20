@@ -104,7 +104,7 @@ class ServerlessCanaryDeployments {
       functionAlias
     })
 
-    this.clearServerlessAlias({ functionName, provisionedConcurrency })
+    this.clearServerlessAlias({ serverlessFnName, provisionedConcurrency })
 
     return [
       deploymentGrTpl,
@@ -114,10 +114,14 @@ class ServerlessCanaryDeployments {
     ]
   }
 
-  clearServerlessAlias ({ functionName, provisionedConcurrency }) {
+  clearServerlessAlias ({ serverlessFnName, provisionedConcurrency }) {
     if (provisionedConcurrency) {
       // https://github.com/serverless/serverless/blob/9591d5a232c641155613d23b0f88ca05ea51b436/lib/plugins/aws/lib/naming.js#L176
-      delete this.compiledTpl.Resources[`${functionName}ProvConcLambdaAlias`]
+      delete this.compiledTpl.Resources[
+        this.naming.getLambdaProvisionedConcurrencyAliasLogicalId(
+          serverlessFnName
+        )
+      ]
     }
   }
 
