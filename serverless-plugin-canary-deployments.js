@@ -106,17 +106,77 @@ class ServerlessCanaryDeployments {
 
     this.clearServerlessAlias({ serverlessFnName, provisionedConcurrency })
 
+    const autoScaling = this.buildAutoScaling({
+      functionName,
+      deploymentSettings,
+      provisionedConcurrency,
+      functionAlias
+    })
+
     return [
       deploymentGrTpl,
       aliasTpl,
       ...lambdaPermissions,
-      ...eventsWithAlias
+      ...eventsWithAlias,
+      ...autoScaling
+    ]
+  }
+
+  buildAutoScaling ({
+    functionName,
+    functionAlias,
+    deploymentSettings,
+    provisionedConcurrency
+  }) {
+    if (!provisionedConcurrency) return []
+
+    const scalableTarget = `${functionName}Target`
+    const trackingPolicyName = `${functionName}ScalingPolicy`
+    const { alias } = deploymentSettings
+    return [
+      {
+        [trackingPolicyName]: {
+          Type: 'AWS::ApplicationAutoScaling::ScalingPolicy',
+          Properties: {
+            PolicyName: 'utilization',
+            PolicyType: 'TargetTrackingScaling',
+            ScalingTargetId: {
+              Ref: scalableTarget
+            },
+            TargetTrackingScalingPolicyConfiguration: {
+              TargetValue: 0.7,
+              PredefinedMetricSpecification: {
+                PredefinedMetricType: 'LambdaProvisionedConcurrencyUtilization'
+              }
+            }
+          }
+        }
+      },
+      {
+        [scalableTarget]: {
+          Type: 'AWS::ApplicationAutoScaling::ScalableTarget',
+          Properties: {
+            MaxCapacity: 100,
+            MinCapacity: 1,
+            ResourceId: {
+              'Fn::Sub': `function:\${${functionName}}:${alias}`
+            },
+            RoleARN: {
+              'Fn::Sub':
+                /* eslint-disable no-template-curly-in-string */
+                'arn:aws:iam::${AWS::AccountId}:role/aws-service-role/lambda.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_LambdaConcurrency'
+            },
+            ScalableDimension: 'lambda:function:ProvisionedConcurrency',
+            ServiceNamespace: 'lambda'
+          },
+          DependsOn: functionAlias
+        }
+      }
     ]
   }
 
   clearServerlessAlias ({ serverlessFnName, provisionedConcurrency }) {
     if (provisionedConcurrency) {
-      // https://github.com/serverless/serverless/blob/9591d5a232c641155613d23b0f88ca05ea51b436/lib/plugins/aws/lib/naming.js#L176
       delete this.compiledTpl.Resources[
         this.naming.getLambdaProvisionedConcurrencyAliasLogicalId(
           serverlessFnName
