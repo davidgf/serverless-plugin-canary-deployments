@@ -314,38 +314,6 @@
         "ServiceRoleArn": { "Fn::GetAtt": ["CodeDeployServiceRole", "Arn"] }
       }
     },
-    "HelloLambdaFunctionScalingPolicy": {
-      "Properties": {
-        "PolicyName": "utilization",
-        "PolicyType": "TargetTrackingScaling",
-        "ScalingTargetId": {
-          "Ref": "HelloLambdaFunctionTarget"
-        },
-        "TargetTrackingScalingPolicyConfiguration": {
-          "PredefinedMetricSpecification": {
-            "PredefinedMetricType": "LambdaProvisionedConcurrencyUtilization"
-          },
-          "TargetValue": 0.7
-        }
-      },
-      "Type": "AWS::ApplicationAutoScaling::ScalingPolicy"
-    },
-    "HelloLambdaFunctionTarget": {
-      "DependsOn": "HelloLambdaFunctionAliasLive",
-      "Properties": {
-        "MaxCapacity": 100,
-        "MinCapacity": 1,
-        "ResourceId": {
-          "Fn::Sub": "function:${HelloLambdaFunction}:Live"
-        },
-        "RoleARN": {
-          "Fn::Sub": "arn:aws:iam::${AWS::AccountId}:role/aws-service-role/lambda.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_LambdaConcurrency"
-        },
-        "ScalableDimension": "lambda:function:ProvisionedConcurrency",
-        "ServiceNamespace": "lambda"
-      },
-      "Type": "AWS::ApplicationAutoScaling::ScalableTarget"
-    },
     "HelloLambdaFunctionAliasLive": {
       "Type": "AWS::Lambda::Alias",
       "Properties": {
@@ -359,7 +327,6 @@
         "Name": "Live",
         "ProvisionedConcurrencyConfig": { "ProvisionedConcurrentExecutions": 4 }
       },
-      "DependsOn": "HelloLambdaFunction",
       "UpdatePolicy": {
         "CodeDeployLambdaAliasUpdate": {
           "ApplicationName": {
@@ -396,38 +363,6 @@
         "ServiceRoleArn": { "Fn::GetAtt": ["CodeDeployServiceRole", "Arn"] }
       }
     },
-    "HelloProvLambdaFunctionScalingPolicy": {
-      "Properties": {
-        "PolicyName": "utilization",
-        "PolicyType": "TargetTrackingScaling",
-        "ScalingTargetId": {
-          "Ref": "HelloProvLambdaFunctionTarget"
-        },
-        "TargetTrackingScalingPolicyConfiguration": {
-          "PredefinedMetricSpecification": {
-            "PredefinedMetricType": "LambdaProvisionedConcurrencyUtilization"
-          },
-          "TargetValue": 0.7
-        }
-      },
-      "Type": "AWS::ApplicationAutoScaling::ScalingPolicy"
-    },
-    "HelloProvLambdaFunctionTarget": {
-      "DependsOn": "HelloProvLambdaFunctionAliasLive",
-      "Properties": {
-        "MaxCapacity": 100,
-        "MinCapacity": 1,
-        "ResourceId": {
-          "Fn::Sub": "function:${HelloProvLambdaFunction}:Live"
-        },
-        "RoleARN": {
-          "Fn::Sub": "arn:aws:iam::${AWS::AccountId}:role/aws-service-role/lambda.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_LambdaConcurrency"
-        },
-        "ScalableDimension": "lambda:function:ProvisionedConcurrency",
-        "ServiceNamespace": "lambda"
-      },
-      "Type": "AWS::ApplicationAutoScaling::ScalableTarget"
-    },
     "HelloProvLambdaFunctionAliasLive": {
       "Type": "AWS::Lambda::Alias",
       "Properties": {
@@ -441,7 +376,6 @@
         "Name": "Live",
         "ProvisionedConcurrencyConfig": { "ProvisionedConcurrentExecutions": 4 }
       },
-      "DependsOn": "HelloProvLambdaFunction",
       "UpdatePolicy": {
         "CodeDeployLambdaAliasUpdate": {
           "ApplicationName": {

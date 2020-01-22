@@ -1,0 +1,34 @@
+{
+  "service": "test-serverless-provision",
+  "provider": {
+    "name": "aws",
+    "runtime": "nodejs10.x"
+  },
+  "functions": {
+    "hello": {
+      "provisionedConcurrency": 1,
+      "handler": "handler.hello",
+      "events": [
+        {
+          "http": {
+            "path": "hello",
+            "method": "GET"
+          }
+        }
+      ],
+      "deploymentSettings": {
+        "type": "Linear10PercentEvery1Minute",
+        "alias": "Live",
+        "autoScaling": {
+          "max": 10,
+          "target": 0.6
+        }
+      }
+    }
+  },
+  "custom": {
+    "deploymentSettings": {
+      "stages": ["dev"]
+    }
+  }
+}

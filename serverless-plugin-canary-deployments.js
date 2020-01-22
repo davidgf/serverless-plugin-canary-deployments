@@ -130,21 +130,28 @@ class ServerlessCanaryDeployments {
   }) {
     if (!provisionedConcurrency) return []
 
+    const { alias, autoScaling } = deploymentSettings
+    if (!autoScaling) {
+      return []
+    }
     const scalableTarget = `${functionName}Target`
     const trackingPolicyName = `${functionName}ScalingPolicy`
-    const { alias } = deploymentSettings
+    const { max, target } = autoScaling
+    // https://docs.aws.amazon.com/autoscaling/application/APIReference/API_PredefinedMetricSpecification.html
+    // https://aws.amazon.com/blogs/aws/new-provisioned-concurrency-for-lambda-functions/
+    // https://epsagon.com/blog/development/control-your-aws-lambda-with-provisioned-concurrency/
     return [
       {
         [trackingPolicyName]: {
           Type: 'AWS::ApplicationAutoScaling::ScalingPolicy',
           Properties: {
-            PolicyName: 'utilization',
+            PolicyName: `${functionName}Utilization`,
             PolicyType: 'TargetTrackingScaling',
             ScalingTargetId: {
               Ref: scalableTarget
             },
             TargetTrackingScalingPolicyConfiguration: {
-              TargetValue: 0.7,
+              TargetValue: target,
               PredefinedMetricSpecification: {
                 PredefinedMetricType: 'LambdaProvisionedConcurrencyUtilization'
               }
@@ -156,8 +163,8 @@ class ServerlessCanaryDeployments {
         [scalableTarget]: {
           Type: 'AWS::ApplicationAutoScaling::ScalableTarget',
           Properties: {
-            MaxCapacity: 100,
-            MinCapacity: 1,
+            MaxCapacity: max,
+            MinCapacity: provisionedConcurrency,
             ResourceId: {
               'Fn::Sub': `function:\${${functionName}}:${alias}`
             },
