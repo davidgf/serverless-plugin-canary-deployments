@@ -22,9 +22,17 @@ custom:
       - prod
 
 functions:
+  authorize:
+    handler: handler.authorize
+    deploymentSettings:
+      type: Linear10PercentEvery1Minute
+      alias: Live
   hello:
     handler: handler.hello
     events:
+      - websocket:
+          route: $default
+          authorizer: authorize
       - http: GET hello
       - stream:
           type: dynamodb
