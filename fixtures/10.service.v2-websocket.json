@@ -1,0 +1,160 @@
+{
+  "service": "canary-deployments-test",
+  "provider": {
+    "name": "aws",
+    "runtime": "nodejs10.x",
+    "iamRoleStatements": [
+      {
+        "Effect": "Allow",
+        "Action": [
+          "codedeploy:*"
+        ],
+        "Resource": [
+          "*"
+        ]
+      }
+    ]
+  },
+  "plugins": [
+    "serverless-plugin-aws-alerts",
+    "serverless-plugin-canary-deployments"
+  ],
+  "custom": {
+    "alerts": {
+      "dashboards": false
+    },
+    "deploymentSettings": {
+      "stages": [
+        "dev",
+        "prod"
+      ]
+    }
+  },
+  "functions": {
+    "hello": {
+      "handler": "handler.hello",
+      "events": [
+        {
+          "websocket": {
+            "route": "$default"
+          }
+        },
+        {
+          "http": "GET hello"
+        },
+        {
+          "stream": {
+            "type": "dynamodb",
+            "arn": {
+              "Fn::GetAtt": [
+                "StreamsTestTable",
+                "StreamArn"
+              ]
+            }
+          }
+        },
+        {
+          "sns": "snsTopic"
+        },
+        {
+          "sns": {
+            "topicName": "fooTopic",
+            "displayName": "fooTopic",
+            "filterPolicy": {
+              "eventType": [
+                "FooEvent"
+              ]
+            }
+          }
+        },
+        {
+          "schedule": {
+            "rate": "rate(1 minute)",
+            "enabled": false
+          }
+        },
+        {
+          "cloudwatchLog": "/aws/lambda/sls-wshop-dev-hello"
+        },
+        {
+          "sqs": {
+            "arn": {
+              "Fn::GetAtt": [
+                "MyQueue",
+                "Arn"
+              ]
+            }
+          }
+        },
+        {
+          "iot": {
+            "sql": "SELECT * FROM 'some_topic'"
+          }
+        }
+      ],
+      "alarms": [
+        {
+          "name": "foo",
+          "namespace": "AWS/Lambda",
+          "metric": "Errors",
+          "threshold": 1,
+          "statistic": "Minimum",
+          "period": 60,
+          "evaluationPeriods": 1,
+          "comparisonOperator": "GreaterThanOrEqualToThreshold"
+        }
+      ],
+      "deploymentSettings": {
+        "type": "Linear10PercentEvery1Minute",
+        "alias": "Live",
+        "preTrafficHook": "preHook",
+        "postTrafficHook": "postHook",
+        "alarms": [
+          "HelloFooAlarm"
+        ]
+      }
+    },
+    "preHook": {
+      "handler": "hooks.pre"
+    },
+    "postHook": {
+      "handler": "hooks.post"
+    }
+  },
+  "resources": {
+    "Resources": {
+      "StreamsTestTable": {
+        "Type": "AWS::DynamoDB::Table",
+        "Properties": {
+          "TableName": "StreamsTestTable",
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "id",
+              "AttributeType": "S"
+            }
+          ],
+          "KeySchema": [
+            {
+              "AttributeName": "id",
+              "KeyType": "HASH"
+            }
+          ],
+          "ProvisionedThroughput": {
+            "ReadCapacityUnits": 1,
+            "WriteCapacityUnits": 1
+          },
+          "StreamSpecification": {
+            "StreamViewType": "NEW_AND_OLD_IMAGES"
+          }
+        }
+      },
+      "MyQueue": {
+        "Type": "AWS::SQS::Queue",
+        "Properties": {
+          "DelaySeconds": 0,
+          "VisibilityTimeout": 120
+        }
+      }
+    }
+  }
+}
