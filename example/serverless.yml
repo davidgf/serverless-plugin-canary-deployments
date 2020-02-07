@@ -8,7 +8,7 @@ provider:
       Action:
         - codedeploy:*
       Resource:
-        - "*"
+        - '*'
 plugins:
   - serverless-plugin-aws-alerts
   - serverless-plugin-canary-deployments
@@ -29,9 +29,10 @@ functions:
       alias: Live
   hello:
     handler: handler.hello
+    provisionedConcurrency: 1
     events:
       - websocket:
-          route: $default
+          route: $connect
           authorizer: authorize
       - http: GET hello
       - stream:
@@ -50,7 +51,7 @@ functions:
       - schedule:
           rate: rate(1 minute)
           enabled: false
-      - cloudwatchLog: "/aws/lambda/sls-wshop-dev-hello"
+      # - cloudwatchLog: '/aws/lambda/sls-wshop-dev-hello'
       - sqs:
           arn:
             Fn::GetAtt:

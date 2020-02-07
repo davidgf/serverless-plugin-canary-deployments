@@ -1,117 +1,117 @@
-const _ = require("lodash/fp");
-const flattenObject = require("flat");
-const CfGenerators = require("./lib/CfTemplateGenerators");
+const _ = require('lodash/fp')
+const flattenObject = require('flat')
+const CfGenerators = require('./lib/CfTemplateGenerators')
 
 class ServerlessCanaryDeployments {
-  constructor(serverless, options) {
-    this.serverless = serverless;
-    this.options = options;
-    this.awsProvider = this.serverless.getProvider("aws");
-    this.naming = this.awsProvider.naming;
-    this.service = this.serverless.service;
+  constructor (serverless, options) {
+    this.serverless = serverless
+    this.options = options
+    this.awsProvider = this.serverless.getProvider('aws')
+    this.naming = this.awsProvider.naming
+    this.service = this.serverless.service
     this.hooks = {
-      "before:package:finalize": this.addCanaryDeploymentResources.bind(this)
-    };
+      'before:package:finalize': this.addCanaryDeploymentResources.bind(this)
+    }
   }
 
-  get codeDeployAppName() {
-    const stackName = this.naming.getStackName();
+  get codeDeployAppName () {
+    const stackName = this.naming.getStackName()
     const normalizedStackName = this.naming.normalizeNameToAlphaNumericOnly(
       stackName
-    );
-    return `${normalizedStackName}DeploymentApplication`;
+    )
+    return `${normalizedStackName}DeploymentApplication`
   }
 
-  get compiledTpl() {
-    return this.service.provider.compiledCloudFormationTemplate;
+  get compiledTpl () {
+    return this.service.provider.compiledCloudFormationTemplate
   }
 
-  get withDeploymentPreferencesFns() {
+  get withDeploymentPreferencesFns () {
     return this.serverless.service
       .getAllFunctions()
       .filter(name =>
-        _.has("deploymentSettings", this.service.getFunction(name))
-      );
+        _.has('deploymentSettings', this.service.getFunction(name))
+      )
   }
 
-  get globalSettings() {
-    return _.pathOr({}, "custom.deploymentSettings", this.service);
+  get globalSettings () {
+    return _.pathOr({}, 'custom.deploymentSettings', this.service)
   }
 
-  get currentStage() {
-    return this.awsProvider.getStage();
+  get currentStage () {
+    return this.awsProvider.getStage()
   }
 
-  addCanaryDeploymentResources() {
+  addCanaryDeploymentResources () {
     if (this.shouldDeployDeployGradually()) {
-      const codeDeployApp = this.buildCodeDeployApp();
-      const codeDeployRole = this.buildCodeDeployRole();
-      const functionsResources = this.buildFunctionsResources();
+      const codeDeployApp = this.buildCodeDeployApp()
+      const codeDeployRole = this.buildCodeDeployRole()
+      const functionsResources = this.buildFunctionsResources()
       Object.assign(
         this.compiledTpl.Resources,
         codeDeployApp,
         codeDeployRole,
         ...functionsResources
-      );
+      )
     }
   }
 
-  shouldDeployDeployGradually() {
+  shouldDeployDeployGradually () {
     return (
       this.withDeploymentPreferencesFns.length > 0 && this.currentStageEnabled()
-    );
+    )
   }
 
-  currentStageEnabled() {
-    const enabledStages = _.getOr([], "stages", this.globalSettings);
+  currentStageEnabled () {
+    const enabledStages = _.getOr([], 'stages', this.globalSettings)
     return (
       _.isEmpty(enabledStages) || _.includes(this.currentStage, enabledStages)
-    );
+    )
   }
 
-  buildFunctionsResources() {
+  buildFunctionsResources () {
     return _.flatMap(
       serverlessFunction => this.buildFunctionResources(serverlessFunction),
       this.withDeploymentPreferencesFns
-    );
+    )
   }
 
-  buildFunctionResources(serverlessFnName) {
-    const functionName = this.naming.getLambdaLogicalId(serverlessFnName);
-    const deploymentSettings = this.getDeploymentSettingsFor(serverlessFnName);
+  buildFunctionResources (serverlessFnName) {
+    const functionName = this.naming.getLambdaLogicalId(serverlessFnName)
+    const deploymentSettings = this.getDeploymentSettingsFor(serverlessFnName)
     const deploymentGrTpl = this.buildFunctionDeploymentGroup({
       deploymentSettings,
       functionName
-    });
-    const deploymentGroup = this.getResourceLogicalName(deploymentGrTpl);
+    })
+    const deploymentGroup = this.getResourceLogicalName(deploymentGrTpl)
     const provisionedConcurrency = this.getProvisionedConcurrency(
       serverlessFnName
-    );
+    )
     const aliasTpl = this.buildFunctionAlias({
       deploymentSettings,
       functionName,
       deploymentGroup,
       provisionedConcurrency
-    });
-    const functionAlias = this.getResourceLogicalName(aliasTpl);
+    })
+    const functionAlias = this.getResourceLogicalName(aliasTpl)
     const lambdaPermissions = this.buildPermissionsForAlias({
       functionName,
       functionAlias,
       provisionedConcurrency
-    });
+    })
     const eventsWithAlias = this.buildEventsForAlias({
       functionName,
       functionAlias
-    });
+    })
 
-    this.clearServerlessAlias({ serverlessFnName, provisionedConcurrency });
+    this.clearServerlessAlias({ serverlessFnName, provisionedConcurrency })
 
     const autoScaling = this.buildAutoScaling({
       functionName,
       deploymentSettings,
       provisionedConcurrency,
       functionAlias
-    });
+    })
 
     return [
       deploymentGrTpl,
@@ -119,41 +119,41 @@ class ServerlessCanaryDeployments {
       ...lambdaPermissions,
       ...eventsWithAlias,
       ...autoScaling
-    ];
+    ]
   }
 
-  buildAutoScaling({
+  buildAutoScaling ({
     functionName,
     functionAlias,
     deploymentSettings,
     provisionedConcurrency
   }) {
-    if (!provisionedConcurrency) return [];
+    if (!provisionedConcurrency) return []
 
-    const { alias, autoScaling } = deploymentSettings;
+    const { alias, autoScaling } = deploymentSettings
     if (!autoScaling) {
-      return [];
+      return []
     }
-    const scalableTarget = `${functionName}Target`;
-    const trackingPolicyName = `${functionName}ScalingPolicy`;
-    const { max, target } = autoScaling;
+    const scalableTarget = `${functionName}Target`
+    const trackingPolicyName = `${functionName}ScalingPolicy`
+    const { max, target } = autoScaling
     // https://docs.aws.amazon.com/autoscaling/application/APIReference/API_PredefinedMetricSpecification.html
     // https://aws.amazon.com/blogs/aws/new-provisioned-concurrency-for-lambda-functions/
     // https://epsagon.com/blog/development/control-your-aws-lambda-with-provisioned-concurrency/
     return [
       {
         [trackingPolicyName]: {
-          Type: "AWS::ApplicationAutoScaling::ScalingPolicy",
+          Type: 'AWS::ApplicationAutoScaling::ScalingPolicy',
           Properties: {
             PolicyName: `${functionName}Utilization`,
-            PolicyType: "TargetTrackingScaling",
+            PolicyType: 'TargetTrackingScaling',
             ScalingTargetId: {
               Ref: scalableTarget
             },
             TargetTrackingScalingPolicyConfiguration: {
               TargetValue: target,
               PredefinedMetricSpecification: {
-                PredefinedMetricType: "LambdaProvisionedConcurrencyUtilization"
+                PredefinedMetricType: 'LambdaProvisionedConcurrencyUtilization'
               }
             }
           }
@@ -161,103 +161,103 @@ class ServerlessCanaryDeployments {
       },
       {
         [scalableTarget]: {
-          Type: "AWS::ApplicationAutoScaling::ScalableTarget",
+          Type: 'AWS::ApplicationAutoScaling::ScalableTarget',
           Properties: {
             MaxCapacity: max,
             MinCapacity: provisionedConcurrency,
             ResourceId: {
-              "Fn::Sub": `function:\${${functionName}}:${alias}`
+              'Fn::Sub': `function:\${${functionName}}:${alias}`
             },
             RoleARN: {
-              "Fn::Sub":
+              'Fn::Sub':
                 /* eslint-disable no-template-curly-in-string */
-                "arn:aws:iam::${AWS::AccountId}:role/aws-service-role/lambda.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_LambdaConcurrency"
+                'arn:aws:iam::${AWS::AccountId}:role/aws-service-role/lambda.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_LambdaConcurrency'
             },
-            ScalableDimension: "lambda:function:ProvisionedConcurrency",
-            ServiceNamespace: "lambda"
+            ScalableDimension: 'lambda:function:ProvisionedConcurrency',
+            ServiceNamespace: 'lambda'
           },
           DependsOn: functionAlias
         }
       }
-    ];
+    ]
   }
 
-  clearServerlessAlias({ serverlessFnName, provisionedConcurrency }) {
+  clearServerlessAlias ({ serverlessFnName, provisionedConcurrency }) {
     if (provisionedConcurrency) {
       delete this.compiledTpl.Resources[
         this.naming.getLambdaProvisionedConcurrencyAliasLogicalId(
           serverlessFnName
         )
-      ];
+      ]
     }
   }
 
-  buildCodeDeployApp() {
-    const logicalName = this.codeDeployAppName;
-    const template = CfGenerators.codeDeploy.buildApplication();
-    return { [logicalName]: template };
+  buildCodeDeployApp () {
+    const logicalName = this.codeDeployAppName
+    const template = CfGenerators.codeDeploy.buildApplication()
+    return { [logicalName]: template }
   }
 
-  buildCodeDeployRole() {
-    if (this.globalSettings.codeDeployRole) return {};
-    const logicalName = "CodeDeployServiceRole";
-    const template = CfGenerators.iam.buildCodeDeployRole();
-    return { [logicalName]: template };
+  buildCodeDeployRole () {
+    if (this.globalSettings.codeDeployRole) return {}
+    const logicalName = 'CodeDeployServiceRole'
+    const template = CfGenerators.iam.buildCodeDeployRole()
+    return { [logicalName]: template }
   }
 
-  buildFunctionDeploymentGroup({ deploymentSettings, functionName }) {
-    const logicalName = `${functionName}DeploymentGroup`;
+  buildFunctionDeploymentGroup ({ deploymentSettings, functionName }) {
+    const logicalName = `${functionName}DeploymentGroup`
     const params = {
       codeDeployAppName: this.codeDeployAppName,
       codeDeployRoleArn: deploymentSettings.codeDeployRole,
       deploymentSettings
-    };
-    const template = CfGenerators.codeDeploy.buildFnDeploymentGroup(params);
-    return { [logicalName]: template };
+    }
+    const template = CfGenerators.codeDeploy.buildFnDeploymentGroup(params)
+    return { [logicalName]: template }
   }
 
-  buildFunctionAlias({
+  buildFunctionAlias ({
     deploymentSettings = {},
     functionName,
     deploymentGroup,
     provisionedConcurrency
   }) {
-    const { alias } = deploymentSettings;
-    const functionVersion = this.getVersionNameFor(functionName);
-    const logicalName = `${functionName}Alias${alias}`;
-    const beforeHook = this.getFunctionName(deploymentSettings.preTrafficHook);
-    const afterHook = this.getFunctionName(deploymentSettings.postTrafficHook);
+    const { alias } = deploymentSettings
+    const functionVersion = this.getVersionNameFor(functionName)
+    const logicalName = `${functionName}Alias${alias}`
+    const beforeHook = this.getFunctionName(deploymentSettings.preTrafficHook)
+    const afterHook = this.getFunctionName(deploymentSettings.postTrafficHook)
     const trafficShiftingSettings = {
       codeDeployApp: this.codeDeployAppName,
       deploymentGroup,
       afterHook,
       beforeHook
-    };
+    }
     const template = CfGenerators.lambda.buildAlias({
       alias,
       functionName,
       functionVersion,
       trafficShiftingSettings,
       provisionedConcurrency
-    });
-    return { [logicalName]: template };
+    })
+    return { [logicalName]: template }
   }
 
-  getProvisionedConcurrency(slsFunctionName) {
+  getProvisionedConcurrency (slsFunctionName) {
     if (this.serverless.service.provider.provisionedConcurrency) {
-      return this.serverless.service.provider.provisionedConcurrency;
+      return this.serverless.service.provider.provisionedConcurrency
     }
     return this.serverless.service.getFunction(slsFunctionName)
-      .provisionedConcurrency;
+      .provisionedConcurrency
   }
 
-  getFunctionName(slsFunctionName) {
+  getFunctionName (slsFunctionName) {
     return slsFunctionName
       ? this.naming.getLambdaLogicalId(slsFunctionName)
-      : null;
+      : null
   }
 
-  buildPermissionsForAlias({
+  buildPermissionsForAlias ({
     functionName,
     functionAlias,
     provisionedConcurrency
@@ -265,72 +265,72 @@ class ServerlessCanaryDeployments {
     const permissions = this.getLambdaPermissionsFor(
       functionName,
       provisionedConcurrency
-    );
+    )
     return _.entries(permissions).map(([logicalName, template]) => {
       let templateWithAlias = CfGenerators.lambda.replacePermissionFunctionWithAlias(
         template,
         functionAlias
-      );
+      )
       if (provisionedConcurrency) {
         templateWithAlias = CfGenerators.lambda.removeProvisionAlias(
           templateWithAlias
-        );
+        )
       }
-      return { [logicalName]: templateWithAlias };
-    });
+      return { [logicalName]: templateWithAlias }
+    })
   }
 
-  buildEventsForAlias({ functionName, functionAlias }) {
+  buildEventsForAlias ({ functionName, functionAlias }) {
     const replaceAliasStrategy = {
-      "AWS::Lambda::EventSourceMapping":
+      'AWS::Lambda::EventSourceMapping':
         CfGenerators.lambda.replaceEventMappingFunctionWithAlias,
-      "AWS::ApiGateway::Method":
+      'AWS::ApiGateway::Method':
         CfGenerators.apiGateway.replaceMethodUriWithAlias,
-      "AWS::ApiGatewayV2::Integration":
+      'AWS::ApiGatewayV2::Integration':
         CfGenerators.apiGateway.replaceV2IntegrationUriWithAlias,
-      "AWS::ApiGatewayV2::Authorizer":
+      'AWS::ApiGatewayV2::Authorizer':
         CfGenerators.apiGateway.replaceV2AuthorizerUriWithAlias,
-      "AWS::SNS::Topic":
+      'AWS::SNS::Topic':
         CfGenerators.sns.replaceTopicSubscriptionFunctionWithAlias,
-      "AWS::SNS::Subscription":
+      'AWS::SNS::Subscription':
         CfGenerators.sns.replaceSubscriptionFunctionWithAlias,
-      "AWS::S3::Bucket": CfGenerators.s3.replaceS3BucketFunctionWithAlias,
-      "AWS::Events::Rule":
+      'AWS::S3::Bucket': CfGenerators.s3.replaceS3BucketFunctionWithAlias,
+      'AWS::Events::Rule':
         CfGenerators.cloudWatchEvents.replaceCloudWatchEventRuleTargetWithAlias,
-      "AWS::Logs::SubscriptionFilter":
+      'AWS::Logs::SubscriptionFilter':
         CfGenerators.cloudWatchLogs
           .replaceCloudWatchLogsDestinationArnWithAlias,
-      "AWS::IoT::TopicRule":
+      'AWS::IoT::TopicRule':
         CfGenerators.iot.replaceIotTopicRuleActionArnWithAlias
-    };
-    const functionEvents = this.getEventsFor(functionName);
-    const functionEventsEntries = _.entries(functionEvents);
+    }
+    const functionEvents = this.getEventsFor(functionName)
+    const functionEventsEntries = _.entries(functionEvents)
     const eventsWithAlias = functionEventsEntries.map(
       ([logicalName, event]) => {
         const evt = replaceAliasStrategy[event.Type](
           event,
           functionAlias,
           functionName
-        );
-        return { [logicalName]: evt };
+        )
+        return { [logicalName]: evt }
       }
-    );
-    return eventsWithAlias;
+    )
+    return eventsWithAlias
   }
 
-  getEventsFor(functionName) {
-    const apiGatewayMethods = this.getApiGatewayMethodsFor(functionName);
-    const apiGatewayV2Methods = this.getApiGatewayV2MethodsFor(functionName);
+  getEventsFor (functionName) {
+    const apiGatewayMethods = this.getApiGatewayMethodsFor(functionName)
+    const apiGatewayV2Methods = this.getApiGatewayV2MethodsFor(functionName)
     const apiGatewayV2Authorizers = this.getApiGatewayV2AuthorizersFor(
       functionName
-    );
-    const eventSourceMappings = this.getEventSourceMappingsFor(functionName);
-    const snsTopics = this.getSnsTopicsFor(functionName);
-    const snsSubscriptions = this.getSnsSubscriptionsFor(functionName);
-    const s3Events = this.getS3EventsFor(functionName);
-    const cloudWatchEvents = this.getCloudWatchEventsFor(functionName);
-    const cloudWatchLogs = this.getCloudWatchLogsFor(functionName);
-    const iotTopicRules = this.getIotTopicRulesFor(functionName);
+    )
+    const eventSourceMappings = this.getEventSourceMappingsFor(functionName)
+    const snsTopics = this.getSnsTopicsFor(functionName)
+    const snsSubscriptions = this.getSnsSubscriptionsFor(functionName)
+    const s3Events = this.getS3EventsFor(functionName)
+    const cloudWatchEvents = this.getCloudWatchEventsFor(functionName)
+    const cloudWatchLogs = this.getCloudWatchLogsFor(functionName)
+    const iotTopicRules = this.getIotTopicRulesFor(functionName)
     return Object.assign(
       {},
       apiGatewayMethods,
@@ -343,210 +343,210 @@ class ServerlessCanaryDeployments {
       cloudWatchLogs,
       snsSubscriptions,
       iotTopicRules
-    );
+    )
   }
 
-  getApiGatewayMethodsFor(functionName) {
-    const isApiGMethod = _.matchesProperty("Type", "AWS::ApiGateway::Method");
+  getApiGatewayMethodsFor (functionName) {
+    const isApiGMethod = _.matchesProperty('Type', 'AWS::ApiGateway::Method')
     const isMethodForFunction = _.pipe(
-      _.prop("Properties.Integration"),
+      _.prop('Properties.Integration'),
       flattenObject,
       _.includes(functionName)
-    );
+    )
     const getMethodsForFunction = _.pipe(
       _.pickBy(isApiGMethod),
       _.pickBy(isMethodForFunction)
-    );
-    return getMethodsForFunction(this.compiledTpl.Resources);
+    )
+    return getMethodsForFunction(this.compiledTpl.Resources)
   }
 
-  getApiGatewayV2MethodsFor(functionName) {
+  getApiGatewayV2MethodsFor (functionName) {
     const isApiGMethod = _.matchesProperty(
-      "Type",
-      "AWS::ApiGatewayV2::Integration"
-    );
+      'Type',
+      'AWS::ApiGatewayV2::Integration'
+    )
     const isMethodForFunction = _.pipe(
-      _.prop("Properties.IntegrationUri"),
+      _.prop('Properties.IntegrationUri'),
       flattenObject,
       _.includes(functionName)
-    );
+    )
     const getMethodsForFunction = _.pipe(
       _.pickBy(isApiGMethod),
       _.pickBy(isMethodForFunction)
-    );
-    return getMethodsForFunction(this.compiledTpl.Resources);
+    )
+    return getMethodsForFunction(this.compiledTpl.Resources)
   }
 
-  getApiGatewayV2AuthorizersFor(functionName) {
+  getApiGatewayV2AuthorizersFor (functionName) {
     const isApiGMethod = _.matchesProperty(
-      "Type",
-      "AWS::ApiGatewayV2::Authorizer"
-    );
+      'Type',
+      'AWS::ApiGatewayV2::Authorizer'
+    )
     const isMethodForFunction = _.pipe(
-      _.prop("Properties.AuthorizerUri"),
+      _.prop('Properties.AuthorizerUri'),
       flattenObject,
       _.includes(functionName)
-    );
+    )
     const getMethodsForFunction = _.pipe(
       _.pickBy(isApiGMethod),
       _.pickBy(isMethodForFunction)
-    );
-    return getMethodsForFunction(this.compiledTpl.Resources);
+    )
+    return getMethodsForFunction(this.compiledTpl.Resources)
   }
 
-  getEventSourceMappingsFor(functionName) {
+  getEventSourceMappingsFor (functionName) {
     const isEventSourceMapping = _.matchesProperty(
-      "Type",
-      "AWS::Lambda::EventSourceMapping"
-    );
+      'Type',
+      'AWS::Lambda::EventSourceMapping'
+    )
     const isMappingForFunction = _.pipe(
-      _.prop("Properties.FunctionName"),
+      _.prop('Properties.FunctionName'),
       flattenObject,
       _.includes(functionName)
-    );
+    )
     const getMappingsForFunction = _.pipe(
       _.pickBy(isEventSourceMapping),
       _.pickBy(isMappingForFunction)
-    );
-    return getMappingsForFunction(this.compiledTpl.Resources);
+    )
+    return getMappingsForFunction(this.compiledTpl.Resources)
   }
 
-  getSnsTopicsFor(functionName) {
-    const isSnsTopic = _.matchesProperty("Type", "AWS::SNS::Topic");
+  getSnsTopicsFor (functionName) {
+    const isSnsTopic = _.matchesProperty('Type', 'AWS::SNS::Topic')
     const isMappingForFunction = _.pipe(
-      _.prop("Properties.Subscription"),
-      _.map(_.prop("Endpoint.Fn::GetAtt")),
+      _.prop('Properties.Subscription'),
+      _.map(_.prop('Endpoint.Fn::GetAtt')),
       _.flatten,
       _.includes(functionName)
-    );
+    )
     const getMappingsForFunction = _.pipe(
       _.pickBy(isSnsTopic),
       _.pickBy(isMappingForFunction)
-    );
-    return getMappingsForFunction(this.compiledTpl.Resources);
+    )
+    return getMappingsForFunction(this.compiledTpl.Resources)
   }
 
-  getSnsSubscriptionsFor(functionName) {
+  getSnsSubscriptionsFor (functionName) {
     const isSnsSubscription = _.matchesProperty(
-      "Type",
-      "AWS::SNS::Subscription"
-    );
+      'Type',
+      'AWS::SNS::Subscription'
+    )
     const isSubscriptionForFunction = _.matchesProperty(
-      "Properties.Endpoint.Fn::GetAtt[0]",
+      'Properties.Endpoint.Fn::GetAtt[0]',
       functionName
-    );
+    )
     const getMappingsForFunction = _.pipe(
       _.pickBy(isSnsSubscription),
       _.pickBy(isSubscriptionForFunction)
-    );
-    return getMappingsForFunction(this.compiledTpl.Resources);
+    )
+    return getMappingsForFunction(this.compiledTpl.Resources)
   }
 
-  getCloudWatchEventsFor(functionName) {
-    const isCloudWatchEvent = _.matchesProperty("Type", "AWS::Events::Rule");
+  getCloudWatchEventsFor (functionName) {
+    const isCloudWatchEvent = _.matchesProperty('Type', 'AWS::Events::Rule')
     const isCwEventForFunction = _.pipe(
-      _.prop("Properties.Targets"),
-      _.map(_.prop("Arn.Fn::GetAtt")),
+      _.prop('Properties.Targets'),
+      _.map(_.prop('Arn.Fn::GetAtt')),
       _.flatten,
       _.includes(functionName)
-    );
+    )
     const getMappingsForFunction = _.pipe(
       _.pickBy(isCloudWatchEvent),
       _.pickBy(isCwEventForFunction)
-    );
-    return getMappingsForFunction(this.compiledTpl.Resources);
+    )
+    return getMappingsForFunction(this.compiledTpl.Resources)
   }
 
-  getCloudWatchLogsFor(functionName) {
+  getCloudWatchLogsFor (functionName) {
     const isLogSubscription = _.matchesProperty(
-      "Type",
-      "AWS::Logs::SubscriptionFilter"
-    );
+      'Type',
+      'AWS::Logs::SubscriptionFilter'
+    )
     const isLogSubscriptionForFn = _.pipe(
-      _.prop("Properties.DestinationArn.Fn::GetAtt"),
+      _.prop('Properties.DestinationArn.Fn::GetAtt'),
       _.flatten,
       _.includes(functionName)
-    );
+    )
     const getMappingsForFunction = _.pipe(
       _.pickBy(isLogSubscription),
       _.pickBy(isLogSubscriptionForFn)
-    );
-    return getMappingsForFunction(this.compiledTpl.Resources);
+    )
+    return getMappingsForFunction(this.compiledTpl.Resources)
   }
 
-  getS3EventsFor(functionName) {
-    const isS3Event = _.matchesProperty("Type", "AWS::S3::Bucket");
+  getS3EventsFor (functionName) {
+    const isS3Event = _.matchesProperty('Type', 'AWS::S3::Bucket')
     const isS3EventForFunction = _.pipe(
-      _.prop("Properties.NotificationConfiguration.LambdaConfigurations"),
-      _.map(_.prop("Function.Fn::GetAtt")),
+      _.prop('Properties.NotificationConfiguration.LambdaConfigurations'),
+      _.map(_.prop('Function.Fn::GetAtt')),
       _.flatten,
       _.includes(functionName)
-    );
+    )
     const getMappingsForFunction = _.pipe(
       _.pickBy(isS3Event),
       _.pickBy(isS3EventForFunction)
-    );
-    return getMappingsForFunction(this.compiledTpl.Resources);
+    )
+    return getMappingsForFunction(this.compiledTpl.Resources)
   }
 
-  getIotTopicRulesFor(functionName) {
-    const isIotTopicRule = _.matchesProperty("Type", "AWS::IoT::TopicRule");
+  getIotTopicRulesFor (functionName) {
+    const isIotTopicRule = _.matchesProperty('Type', 'AWS::IoT::TopicRule')
     const isIotTopicRuleForFunction = _.matchesProperty(
-      "Properties.TopicRulePayload.Actions[0].Lambda.FunctionArn.Fn::GetAtt[0]",
+      'Properties.TopicRulePayload.Actions[0].Lambda.FunctionArn.Fn::GetAtt[0]',
       functionName
-    );
+    )
     const getMappingsForFunction = _.pipe(
       _.pickBy(isIotTopicRule),
       _.pickBy(isIotTopicRuleForFunction)
-    );
-    return getMappingsForFunction(this.compiledTpl.Resources);
+    )
+    return getMappingsForFunction(this.compiledTpl.Resources)
   }
 
-  getVersionNameFor(functionName) {
-    const isLambdaVersion = _.matchesProperty("Type", "AWS::Lambda::Version");
+  getVersionNameFor (functionName) {
+    const isLambdaVersion = _.matchesProperty('Type', 'AWS::Lambda::Version')
     const isVersionForFunction = _.matchesProperty(
-      "Properties.FunctionName.Ref",
+      'Properties.FunctionName.Ref',
       functionName
-    );
+    )
     const getVersionNameForFunction = _.pipe(
       _.pickBy(isLambdaVersion),
       _.findKey(isVersionForFunction)
-    );
-    return getVersionNameForFunction(this.compiledTpl.Resources);
+    )
+    return getVersionNameForFunction(this.compiledTpl.Resources)
   }
 
-  getLambdaPermissionsFor(functionName, provisionedConcurrency) {
+  getLambdaPermissionsFor (functionName, provisionedConcurrency) {
     const isLambdaPermission = _.matchesProperty(
-      "Type",
-      "AWS::Lambda::Permission"
-    );
+      'Type',
+      'AWS::Lambda::Permission'
+    )
 
     let isPermissionForFunction = _.matchesProperty(
-      "Properties.FunctionName.Fn::GetAtt[0]",
+      'Properties.FunctionName.Fn::GetAtt[0]',
       functionName
-    );
+    )
     if (provisionedConcurrency) {
       isPermissionForFunction = _.matchesProperty(
         "Properties.FunctionName['Fn::Join'][1][0]['Fn::GetAtt'][0]",
         functionName
-      );
+      )
     }
     const getPermissionForFunction = _.pipe(
       _.pickBy(isLambdaPermission),
       _.pickBy(isPermissionForFunction)
-    );
-    return getPermissionForFunction(this.compiledTpl.Resources);
+    )
+    return getPermissionForFunction(this.compiledTpl.Resources)
   }
 
-  getResourceLogicalName(resource) {
-    return _.head(_.keys(resource));
+  getResourceLogicalName (resource) {
+    return _.head(_.keys(resource))
   }
 
-  getDeploymentSettingsFor(serverlessFunction) {
+  getDeploymentSettingsFor (serverlessFunction) {
     const fnDeploymentSetting = this.service.getFunction(serverlessFunction)
-      .deploymentSettings;
-    return Object.assign({}, this.globalSettings, fnDeploymentSetting);
+      .deploymentSettings
+    return Object.assign({}, this.globalSettings, fnDeploymentSetting)
   }
 }
 
-module.exports = ServerlessCanaryDeployments;
+module.exports = ServerlessCanaryDeployments
