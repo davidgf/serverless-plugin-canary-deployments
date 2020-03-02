@@ -546,9 +546,10 @@
         },
         "DeploymentConfigName": {
           "Fn::Sub": [
-            "CodeDeployDefault.Lambda${ConfigName}",
+            "${ConfigNamePrefix}${ConfigName}",
             {
-              "ConfigName": "Linear10PercentEvery1Minute"
+              "ConfigName": "Linear10PercentEvery1Minute",
+              "ConfigNamePrefix": "CodeDeployDefault.Lambda"
             }
           ]
         },

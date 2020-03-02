@@ -60,7 +60,7 @@ You can see a working example in the [example folder](./example/).
 
 ## <a name="configuration"></a>Configuration
 
-* `type`: (required) defines how the traffic will be shifted between Lambda function versions. It must be one of the following:
+* `type`: (required) defines how the traffic will be shifted between Lambda function versions. It must be one of the following if no custom prefix is provided:
   - `Canary10Percent5Minutes`: shifts 10 percent of traffic in the first increment. The remaining 90 percent is deployed five minutes later.
   - `Canary10Percent10Minutes`: shifts 10 percent of traffic in the first increment. The remaining 90 percent is deployed 10 minutes later.
   - `Canary10Percent15Minutes`: shifts 10 percent of traffic in the first increment. The remaining 90 percent is deployed 15 minutes later.
@@ -70,6 +70,7 @@ You can see a working example in the [example folder](./example/).
   - `Linear10PercentEvery3Minutes`: shifts 10 percent of traffic every three minutes until all traffic is shifted.
   - `Linear10PercentEvery10Minutes`: shifts 10 percent of traffic every 10 minutes until all traffic is shifted.
   - `AllAtOnce`: shifts all the traffic to the new version, useful when you only need to execute the validation hooks.
+* `prefix`: (optional) By default the prefix _CodeDeployDefault.Lambda_ is used for the type, via prefix you can configure your own prefix in order to use custom types.
 * `alias`: (required) name that will be used to create the Lambda function alias.
 * `preTrafficHook`: (optional) validation Lambda function that runs before traffic shifting. It must use the CodeDeploy SDK to notify about this step's success or failure (more info [here](https://docs.aws.amazon.com/codedeploy/latest/userguide/reference-appspec-file-structure-hooks.html)).
 * `postTrafficHook`: (optional) validation Lambda function that runs after traffic shifting. It must use the CodeDeploy SDK to notify about this step's success or failure (more info [here](https://docs.aws.amazon.com/codedeploy/latest/userguide/reference-appspec-file-structure-hooks.html))
