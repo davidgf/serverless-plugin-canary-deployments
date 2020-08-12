@@ -33,7 +33,10 @@ functions:
       - websocket:
           route: $default
           authorizer: authorize
-      - http: GET hello
+      - http:
+          path: hello
+          method: GET
+          authorizer: authorize
       - stream:
           type: dynamodb
           arn:
