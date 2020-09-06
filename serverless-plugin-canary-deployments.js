@@ -144,6 +144,7 @@ class ServerlessCanaryDeployments {
       'AWS::ApiGateway::Method': CfGenerators.apiGateway.replaceMethodUriWithAlias,
       'AWS::ApiGatewayV2::Integration': CfGenerators.apiGateway.replaceV2IntegrationUriWithAlias,
       'AWS::ApiGatewayV2::Authorizer': CfGenerators.apiGateway.replaceV2AuthorizerUriWithAlias,
+      'AWS::ElasticLoadBalancingV2::TargetGroup': CfGenerators.alb.replaceTargetGroupWithAlias,
       'AWS::SNS::Topic': CfGenerators.sns.replaceTopicSubscriptionFunctionWithAlias,
       'AWS::SNS::Subscription': CfGenerators.sns.replaceSubscriptionFunctionWithAlias,
       'AWS::S3::Bucket': CfGenerators.s3.replaceS3BucketFunctionWithAlias,
@@ -164,6 +165,7 @@ class ServerlessCanaryDeployments {
     const apiGatewayMethods = this.getApiGatewayMethodsFor(functionName)
     const apiGatewayV2Methods = this.getApiGatewayV2MethodsFor(functionName)
     const apiGatewayV2Authorizers = this.getApiGatewayV2AuthorizersFor(functionName)
+    const albTargetGroups = this.getALBTargetGroupsFor(functionName)
     const eventSourceMappings = this.getEventSourceMappingsFor(functionName)
     const snsTopics = this.getSnsTopicsFor(functionName)
     const snsSubscriptions = this.getSnsSubscriptionsFor(functionName)
@@ -176,6 +178,7 @@ class ServerlessCanaryDeployments {
       apiGatewayMethods,
       apiGatewayV2Methods,
       apiGatewayV2Authorizers,
+      albTargetGroups,
       eventSourceMappings,
       snsTopics,
       s3Events,
@@ -224,6 +227,20 @@ class ServerlessCanaryDeployments {
     const getMethodsForFunction = _.pipe(
       _.pickBy(isApiGMethod),
       _.pickBy(isMethodForFunction)
+    )
+    return getMethodsForFunction(this.compiledTpl.Resources)
+  }
+
+  getALBTargetGroupsFor (functionName) {
+    const isALBTG = _.matchesProperty('Type', 'AWS::ElasticLoadBalancingV2::TargetGroup')
+    const isTGForFunction = _.pipe(
+      _.prop('Properties.Targets'),
+      flattenObject,
+      _.includes(functionName)
+    )
+    const getMethodsForFunction = _.pipe(
+      _.pickBy(isALBTG),
+      _.pickBy(isTGForFunction)
     )
     return getMethodsForFunction(this.compiledTpl.Resources)
   }
@@ -336,9 +353,11 @@ class ServerlessCanaryDeployments {
 
   getLambdaPermissionsFor (functionName) {
     const isLambdaPermission = _.matchesProperty('Type', 'AWS::Lambda::Permission')
+    const isNotLambdaSourcePermission = _.prop('Properties.SourceArn')
     const isPermissionForFunction = _.matchesProperty('Properties.FunctionName.Fn::GetAtt[0]', functionName)
     const getPermissionForFunction = _.pipe(
       _.pickBy(isLambdaPermission),
+      _.omitBy(isNotLambdaSourcePermission),
       _.pickBy(isPermissionForFunction)
     )
     return getPermissionForFunction(this.compiledTpl.Resources)
