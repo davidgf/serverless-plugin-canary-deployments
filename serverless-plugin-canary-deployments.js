@@ -40,8 +40,18 @@ class ServerlessCanaryDeployments {
   addCanaryDeploymentResources () {
     if (this.shouldDeployDeployGradually()) {
       const codeDeployApp = this.buildCodeDeployApp()
-      const codeDeployRole = this.buildCodeDeployRole()
       const functionsResources = this.buildFunctionsResources()
+      const codeDeployRole = this.buildCodeDeployRole()
+      if (codeDeployRole) {
+        // If the template has trigger configurations,
+        // attaching the SNS fully managed policy to the new role.
+        const firstKey = Object.keys(functionsResources[0])[0]
+        if (functionsResources[0][firstKey].Properties.TriggerConfigurations) {
+          codeDeployRole['CodeDeployServiceRole'].Properties.ManagedPolicyArns.push(
+            'arn:aws:iam::aws:policy/AmazonSNSFullAccess'
+          )
+        }
+      }
       Object.assign(
         this.compiledTpl.Resources,
         codeDeployApp,
