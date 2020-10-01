@@ -9,7 +9,7 @@
   "scripts": {
     "test": "npm run lint && NODE_ENV=test ./node_modules/mocha/bin/mocha $(find ./ -name '*.test.js' -not -path '.*/node_modules/*')",
     "watch": "NODE_ENV=test ./node_modules/mocha/bin/mocha -w $(find ./ -name '*.test.js' -not -path '*/node_modules/*')",
-    "lint": "standard"
+    "lint": "standard --fix"
   },
   "author": "David García <davidgf1987@gmail.com>",
   "contributors": [
