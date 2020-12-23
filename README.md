@@ -84,6 +84,7 @@ You can set default values for all functions in a top-level custom deploymentSet
 custom:
   deploymentSettings:
     codeDeployRole: some_arn_value
+    codeDeployRolePermissionsBoundary: some_arn_value
     stages:
       - dev
       - prod
@@ -95,6 +96,7 @@ functions:
 Some values are only available as top-level configurations.  They are:
 
 * `codeDeployRole`: (optional) an ARN specifying an existing IAM role for CodeDeploy.  If absent, one will be created for you.  See the [codeDeploy policy](./example-code-deploy-policy.json) for an example of what is needed.
+* `codeDeployRolePermissionsBoundary`: (optional) an ARN specifying an existing IAM permissions boundary, this permission boundary is set on the code deploy that is being created when codeDeployRole is not defined.
 * `stages`: (optional) list of stages where you want to deploy your functions gradually. If not present, it assumes that are all of them.
 
 ## <a name="how"></a>How it works
