@@ -40,8 +40,8 @@ class ServerlessCanaryDeployments {
   addCanaryDeploymentResources () {
     if (this.shouldDeployDeployGradually()) {
       const codeDeployApp = this.buildCodeDeployApp()
-      const codeDeployRole = this.buildCodeDeployRole()
       const functionsResources = this.buildFunctionsResources()
+      const codeDeployRole = this.buildCodeDeployRole(this.areTriggerConfigurationsSet(functionsResources))
       Object.assign(
         this.compiledTpl.Resources,
         codeDeployApp,
@@ -49,6 +49,20 @@ class ServerlessCanaryDeployments {
         ...functionsResources
       )
     }
+  }
+
+  areTriggerConfigurationsSet (functionsResources) {
+    // Checking if the template has trigger configurations.
+    for (var resource of functionsResources) {
+      for (var key of Object.keys(resource)) {
+        if (resource[key].Type === 'AWS::CodeDeploy::DeploymentGroup') {
+          if (resource[key].Properties.TriggerConfigurations) {
+            return true
+          }
+        }
+      }
+    }
+    return false
   }
 
   shouldDeployDeployGradually () {
@@ -86,10 +100,10 @@ class ServerlessCanaryDeployments {
     return { [logicalName]: template }
   }
 
-  buildCodeDeployRole () {
+  buildCodeDeployRole (areTriggerConfigurationsSet) {
     if (this.globalSettings.codeDeployRole) return {}
     const logicalName = 'CodeDeployServiceRole'
-    const template = CfGenerators.iam.buildCodeDeployRole(this.globalSettings.codeDeployRolePermissionsBoundary)
+    const template = CfGenerators.iam.buildCodeDeployRole(this.globalSettings.codeDeployRolePermissionsBoundary, areTriggerConfigurationsSet)
     return { [logicalName]: template }
   }
 
