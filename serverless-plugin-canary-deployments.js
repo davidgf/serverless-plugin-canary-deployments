@@ -52,12 +52,15 @@ class ServerlessCanaryDeployments {
   }
 
   areTriggerConfigurationsSet (functionsResources) {
-    // If the template has trigger configurations,
-    // attaching the SNS fully managed policy to the new role.
-    const firstKey = Object.keys(functionsResources[0])[0]
-    if (functionsResources[0][firstKey].Properties.TriggerConfigurations) {
-      console.log('Yup')
-      return true
+    // Checking if the template has trigger configurations.
+    for (var resource of functionsResources) {
+      for (var key of Object.keys(resource)) {
+        if (resource[key].Type === 'AWS::CodeDeploy::DeploymentGroup') {
+          if (resource[key].Properties.TriggerConfigurations) {
+            return true
+          }
+        }
+      }
     }
     return false
   }
