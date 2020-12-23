@@ -103,7 +103,7 @@ class ServerlessCanaryDeployments {
   buildCodeDeployRole (areTriggerConfigurationsSet) {
     if (this.globalSettings.codeDeployRole) return {}
     const logicalName = 'CodeDeployServiceRole'
-    const template = CfGenerators.iam.buildCodeDeployRole(this.globalSettings.codeDeployRolePermissionsBoundary)
+    const template = CfGenerators.iam.buildCodeDeployRole(this.globalSettings.codeDeployRolePermissionsBoundary, areTriggerConfigurationsSet)
     return { [logicalName]: template }
   }
 
