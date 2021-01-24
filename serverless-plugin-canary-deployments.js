@@ -48,6 +48,7 @@ class ServerlessCanaryDeployments {
         codeDeployRole,
         ...functionsResources
       )
+      this.patchExecutionRole(this.compiledTpl)
     }
   }
 
@@ -108,7 +109,7 @@ class ServerlessCanaryDeployments {
   }
 
   buildFunctionDeploymentGroup ({ deploymentSettings, functionName }) {
-    const logicalName = `${functionName}DeploymentGroup`
+    const logicalName = this.getFunctionDeploymentGroupId(functionName)
     const params = {
       codeDeployAppName: this.codeDeployAppName,
       codeDeployRoleArn: deploymentSettings.codeDeployRole,
@@ -137,6 +138,10 @@ class ServerlessCanaryDeployments {
       trafficShiftingSettings
     })
     return { [logicalName]: template }
+  }
+
+  getFunctionDeploymentGroupId (functionLogicalId) {
+    return `${functionLogicalId}DeploymentGroup`
   }
 
   getFunctionName (slsFunctionName) {
@@ -362,9 +367,29 @@ class ServerlessCanaryDeployments {
     return _.head(_.keys(resource))
   }
 
-  getDeploymentSettingsFor (serverlessFunction) {
-    const fnDeploymentSetting = this.service.getFunction(serverlessFunction).deploymentSettings
+  getDeploymentSettingsFor (slsFunctionName) {
+    const fnDeploymentSetting = this.service.getFunction(slsFunctionName).deploymentSettings
     return Object.assign({}, this.globalSettings, fnDeploymentSetting)
+  }
+
+  patchExecutionRole (cfnTemplate) {
+    const executionRole = cfnTemplate.Resources[this.naming.getRoleLogicalId()]
+    if (!executionRole) {
+      return
+    }
+    const hasHook = _.pipe(
+      this.getDeploymentSettingsFor.bind(this),
+      settings => settings.preTrafficHook || settings.postTrafficHook
+    )
+    const getDeploymentGroup = _.pipe(
+      this.getFunctionName.bind(this),
+      this.getFunctionDeploymentGroupId.bind(this)
+    )
+    const deploymentGroups = _.pipe(
+      _.filter(hasHook),
+      _.map(getDeploymentGroup)
+    )(this.withDeploymentPreferencesFns)
+    CfGenerators.iam.patchExecutionRoleForCodeDeploy(executionRole, this.codeDeployAppName, deploymentGroups)
   }
 }
 

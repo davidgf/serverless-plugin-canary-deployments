@@ -80,6 +80,17 @@
                   "Effect": "Allow",
                   "Action": ["codedeploy:*"],
                   "Resource": ["*"]
+                },
+                {
+                  "Action": [
+                    "codedeploy:PutLifecycleEventHookExecutionStatus"
+                  ],
+                  "Effect": "Allow",
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:codedeploy:${AWS::Region}:${AWS::AccountId}:deploymentgroup:${CanarydeploymentstestdevDeploymentApplication}/${BelloLambdaFunctionDeploymentGroup}"
+                    }
+                  ]
                 }
               ]
             }
