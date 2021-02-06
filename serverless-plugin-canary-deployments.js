@@ -42,13 +42,14 @@ class ServerlessCanaryDeployments {
       const codeDeployApp = this.buildCodeDeployApp()
       const functionsResources = this.buildFunctionsResources()
       const codeDeployRole = this.buildCodeDeployRole(this.areTriggerConfigurationsSet(functionsResources))
+      const executionRole = this.buildExecutionRole()
       Object.assign(
         this.compiledTpl.Resources,
         codeDeployApp,
         codeDeployRole,
+        executionRole,
         ...functionsResources
       )
-      this.patchExecutionRole(this.compiledTpl)
     }
   }
 
@@ -73,6 +74,31 @@ class ServerlessCanaryDeployments {
   currentStageEnabled () {
     const enabledStages = _.getOr([], 'stages', this.globalSettings)
     return _.isEmpty(enabledStages) || _.includes(this.currentStage, enabledStages)
+  }
+
+  buildExecutionRole () {
+    const logicalName = this.naming.getRoleLogicalId()
+
+    const inputRole = this.compiledTpl.Resources[logicalName]
+    if (!inputRole) {
+      return
+    }
+    const hasHook = _.pipe(
+      this.getDeploymentSettingsFor.bind(this),
+      settings => settings.preTrafficHook || settings.postTrafficHook
+    )
+    const getDeploymentGroup = _.pipe(
+      this.getFunctionName.bind(this),
+      this.getFunctionDeploymentGroupId.bind(this)
+    )
+    const deploymentGroups = _.pipe(
+      _.filter(hasHook),
+      _.map(getDeploymentGroup)
+    )(this.withDeploymentPreferencesFns)
+
+    const outputRole = CfGenerators.iam.buildExecutionRoleWithCodeDeploy(inputRole, this.codeDeployAppName, deploymentGroups)
+
+    return { [logicalName]: outputRole }
   }
 
   buildFunctionsResources () {
@@ -370,26 +396,6 @@ class ServerlessCanaryDeployments {
   getDeploymentSettingsFor (slsFunctionName) {
     const fnDeploymentSetting = this.service.getFunction(slsFunctionName).deploymentSettings
     return Object.assign({}, this.globalSettings, fnDeploymentSetting)
-  }
-
-  patchExecutionRole (cfnTemplate) {
-    const executionRole = cfnTemplate.Resources[this.naming.getRoleLogicalId()]
-    if (!executionRole) {
-      return
-    }
-    const hasHook = _.pipe(
-      this.getDeploymentSettingsFor.bind(this),
-      settings => settings.preTrafficHook || settings.postTrafficHook
-    )
-    const getDeploymentGroup = _.pipe(
-      this.getFunctionName.bind(this),
-      this.getFunctionDeploymentGroupId.bind(this)
-    )
-    const deploymentGroups = _.pipe(
-      _.filter(hasHook),
-      _.map(getDeploymentGroup)
-    )(this.withDeploymentPreferencesFns)
-    CfGenerators.iam.patchExecutionRoleForCodeDeploy(executionRole, this.codeDeployAppName, deploymentGroups)
   }
 }
 
