@@ -35,7 +35,7 @@
     "standard": "*"
   },
   "peerDependencies": {
-    "serverless": ">= 1.26.0"
+    "serverless": ">= 2.22.0"
   },
   "keywords": [
     "aws",
