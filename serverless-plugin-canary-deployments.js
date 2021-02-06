@@ -12,6 +12,14 @@ class ServerlessCanaryDeployments {
     this.hooks = {
       'before:package:finalize': this.addCanaryDeploymentResources.bind(this)
     }
+    const deploymentSettingsSchema = {
+      type: 'object',
+      properties: {
+        deploymentSettings: { type: 'object' }
+      }
+    }
+    serverless.configSchemaHandler.defineCustomProperties(deploymentSettingsSchema)
+    serverless.configSchemaHandler.defineFunctionProperties('aws', deploymentSettingsSchema)
   }
 
   get codeDeployAppName () {
