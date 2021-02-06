@@ -1,0 +1,27 @@
+{
+  "service": "canary-deployments-test",
+  "functions": {
+    "hello": {
+      "handler": "handler.hello",
+      "deploymentSettings": {
+        "type": "AllAtOnce",
+        "alias": "Live",
+        "preTrafficHook": "preHook"
+      }
+    },
+    "goodbye": {
+      "handler": "handler.goodbye",
+      "deploymentSettings": {
+        "type": "AllAtOnce",
+        "alias": "Live",
+        "postTrafficHook": "postHook"
+      }
+    },
+    "preHook": {
+      "handler": "hooks.pre"
+    },
+    "postHook": {
+      "handler": "hooks.post"
+    }
+  }
+}

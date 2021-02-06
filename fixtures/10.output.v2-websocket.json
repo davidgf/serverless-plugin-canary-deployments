@@ -176,6 +176,17 @@
                       ]
                     }
                   ]
+                },
+                {
+                  "Action": [
+                    "codedeploy:PutLifecycleEventHookExecutionStatus"
+                  ],
+                  "Effect": "Allow",
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:codedeploy:${AWS::Region}:${AWS::AccountId}:deploymentgroup:${CanarydeploymentstestdevDeploymentApplication}/${HelloLambdaFunctionDeploymentGroup}"
+                    }
+                  ]
                 }
               ]
             }
