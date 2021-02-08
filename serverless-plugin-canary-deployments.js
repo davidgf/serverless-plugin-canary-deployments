@@ -12,6 +12,7 @@ class ServerlessCanaryDeployments {
     this.hooks = {
       'before:package:finalize': this.addCanaryDeploymentResources.bind(this)
     }
+    this.extendConfigSchema()
   }
 
   get codeDeployAppName () {
@@ -35,6 +36,134 @@ class ServerlessCanaryDeployments {
 
   get currentStage () {
     return this.awsProvider.getStage()
+  }
+
+  /**
+   * Extend the Serverless configuration schema with our plugin definitions.
+   *
+   * Some properties are untyped for CloudFormation pseudo parameter support.
+   *
+   * {@link https://www.serverless.com/framework/docs/providers/aws/guide/plugins/#extending-validation-schema}
+   * {@link https://github.com/ajv-validator/ajv}
+   */
+  extendConfigSchema () {
+    if (!(
+      this.serverless.configSchemaHandler &&
+      this.serverless.configSchemaHandler.defineCustomProperties &&
+      this.serverless.configSchemaHandler.defineFunctionProperties
+    )) {
+      // We're running an old Serverless version without schema validation.
+      return
+    }
+
+    const customProps = {
+      codeDeployRole: {
+        description: 'This may be a plain string or a CloudFormation pseudo parameter.'
+      },
+      codeDeployRolePermissionsBoundary: {
+        description: 'This may be a plain string or a CloudFormation pseudo parameter.'
+      },
+      stages: {
+        type: 'array',
+        item: {
+          type: 'string'
+        }
+      }
+    }
+
+    const functionProps = {
+      type: {
+        type: 'string',
+        enum: [
+          'AllAtOnce',
+          'Canary10Percent5Minutes',
+          'Canary10Percent10Minutes',
+          'Canary10Percent15Minutes',
+          'Canary10Percent30Minutes',
+          'Linear10PercentEvery1Minute',
+          'Linear10PercentEvery2Minutes',
+          'Linear10PercentEvery3Minutes',
+          'Linear10PercentEvery10Minutes'
+        ]
+      },
+      alias: {
+        type: 'string'
+      },
+      preTrafficHook: {
+        type: 'string'
+      },
+      postTrafficHook: {
+        type: 'string'
+      },
+      alarms: {
+        type: 'array',
+        items: {
+          oneOf: [{
+            type: 'string'
+          },
+          {
+            type: 'object',
+            required: ['name'],
+            additionalProperties: false,
+            properties: {
+              name: {
+                description: 'This may be a plain string or a CloudFormation pseudo parameter.'
+              }
+            }
+          }]
+        }
+      },
+      triggerConfigurations: {
+        type: 'array',
+        item: {
+          type: 'object',
+          required: [],
+          additionalProperties: false,
+          properties: {
+            TriggerEvents: {
+              type: 'array',
+              items: {
+                description: 'This may be a plain string or a CloudFormation pseudo parameter.'
+              }
+            },
+            TriggerName: {
+              description: 'This may be a plain string or a CloudFormation pseudo parameter.'
+            },
+            TargetTriggerArn: {
+              description: 'This may be a plain string or a CloudFormation pseudo parameter.'
+            }
+          }
+        }
+      }
+    }
+
+    this.serverless.configSchemaHandler.defineCustomProperties({
+      type: 'object',
+      required: [],
+      properties: {
+        deploymentSettings: {
+          description: '`alias` and `type` are required but may be sourced from function props.',
+          type: 'object',
+          required: [],
+          additionalProperties: false,
+          properties: Object.assign({}, functionProps, customProps)
+        }
+      }
+    })
+
+    this.serverless.configSchemaHandler.defineFunctionProperties('aws', {
+      type: 'object',
+      required: [],
+      properties: {
+        deploymentSettings: {
+          description: '`alias` and `type` are required but may be sourced from custom props.',
+          type: 'object',
+          required: [],
+          additionalProperties: false,
+          properties: functionProps
+        }
+      }
+    })
   }
 
   addCanaryDeploymentResources () {
