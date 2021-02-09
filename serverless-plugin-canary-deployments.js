@@ -2,6 +2,7 @@ const _ = require('lodash/fp')
 const flattenObject = require('flat')
 const CfGenerators = require('./lib/CfTemplateGenerators')
 
+const slsHasConfigSchema = sls => _.hasIn(sls, 'configSchemaHandler.defineCustomProperties')
 class ServerlessCanaryDeployments {
   constructor (serverless, options) {
     this.serverless = serverless
@@ -12,14 +13,6 @@ class ServerlessCanaryDeployments {
     this.hooks = {
       'before:package:finalize': this.addCanaryDeploymentResources.bind(this)
     }
-    const deploymentSettingsSchema = {
-      type: 'object',
-      properties: {
-        deploymentSettings: { type: 'object' }
-      }
-    }
-    serverless.configSchemaHandler.defineCustomProperties(deploymentSettingsSchema)
-    serverless.configSchemaHandler.defineFunctionProperties('aws', deploymentSettingsSchema)
   }
 
   get codeDeployAppName () {
@@ -43,6 +36,19 @@ class ServerlessCanaryDeployments {
 
   get currentStage () {
     return this.awsProvider.getStage()
+  }
+
+  addConfigSchema () {
+    if (slsHasConfigSchema(this.serverless)) {
+      const deploymentSettingsSchema = {
+        type: 'object',
+        properties: {
+          deploymentSettings: { type: 'object' }
+        }
+      }
+      this.serverless.configSchemaHandler.defineCustomProperties(deploymentSettingsSchema)
+      this.serverless.configSchemaHandler.defineFunctionProperties('aws', deploymentSettingsSchema)
+    }
   }
 
   addCanaryDeploymentResources () {
