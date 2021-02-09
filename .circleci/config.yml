@@ -26,4 +26,4 @@ jobs:
 workflows:
   run_tests:
     jobs:
-      - npm test
+      - test
