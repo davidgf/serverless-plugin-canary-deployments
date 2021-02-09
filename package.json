@@ -23,15 +23,15 @@
   },
   "dependencies": {
     "flat": "^4.1.0",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.20",
     "omit-empty": "^0.4.1"
   },
   "devDependencies": {
     "chai": "^4.2.0",
     "get-installed-path": "^4.0.8",
     "husky": "^3.0.1",
-    "mocha": "^5.2.0",
-    "serverless": "^1.47.0",
+    "mocha": "^8.2.1",
+    "serverless": "^2.22.0",
     "standard": "*"
   },
   "peerDependencies": {

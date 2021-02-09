@@ -8,7 +8,7 @@
     "uuid": "^3.3.2"
   },
   "devDependencies": {
-    "serverless": "^1.47.0",
+    "serverless": "^2.22.0",
     "serverless-plugin-aws-alerts": "^1.2.4",
     "serverless-plugin-canary-deployments": "^0.4.2"
   },
