@@ -1,3 +1,7 @@
+# 0.6.0 (31.03.2021)
+- Add config validator #102
+- Replace deprecated AWS managed policy for codedeploy #116
+
 # 0.5.0 (09.02.2021)
 - Add support for API Gateway v2 #72
 - Update CodeDeploy default policy to AWSCodeDeployRoleForLambdaLimited #98
