@@ -829,7 +829,7 @@
       "Properties": {
         "ManagedPolicyArns": [
           "arn:aws:iam::aws:policy/service-role/AWSCodeDeployRoleForLambdaLimited",
-          "arn:aws:iam::aws:policy/AWSLambdaFullAccess"
+          "arn:aws:iam::aws:policy/AWSLambda_FullAccess"
         ],
         "AssumeRolePolicyDocument": {
           "Version": "2012-10-17",
