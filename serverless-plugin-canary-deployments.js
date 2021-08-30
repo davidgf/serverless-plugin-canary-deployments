@@ -71,8 +71,8 @@ class ServerlessCanaryDeployments {
 
   areTriggerConfigurationsSet (functionsResources) {
     // Checking if the template has trigger configurations.
-    for (var resource of functionsResources) {
-      for (var key of Object.keys(resource)) {
+    for (const resource of functionsResources) {
+      for (const key of Object.keys(resource)) {
         if (resource[key].Type === 'AWS::CodeDeploy::DeploymentGroup') {
           if (resource[key].Properties.TriggerConfigurations) {
             return true
@@ -105,7 +105,8 @@ class ServerlessCanaryDeployments {
     )
     const getDeploymentGroup = _.pipe(
       this.getFunctionName.bind(this),
-      this.getFunctionDeploymentGroupId.bind(this)
+      this.getFunctionDeploymentGroupId.bind(this),
+      this.getDeploymentGroupName.bind(this)
     )
     const deploymentGroups = _.pipe(
       _.filter(hasHook),
@@ -152,8 +153,10 @@ class ServerlessCanaryDeployments {
 
   buildFunctionDeploymentGroup ({ deploymentSettings, functionName }) {
     const logicalName = this.getFunctionDeploymentGroupId(functionName)
+    const codeDeployGroupName = this.getDeploymentGroupName(logicalName)
     const params = {
       codeDeployAppName: this.codeDeployAppName,
+      codeDeployGroupName,
       codeDeployRoleArn: deploymentSettings.codeDeployRole,
       deploymentSettings
     }
@@ -184,6 +187,10 @@ class ServerlessCanaryDeployments {
 
   getFunctionDeploymentGroupId (functionLogicalId) {
     return `${functionLogicalId}DeploymentGroup`
+  }
+
+  getDeploymentGroupName (deploymentGroupLogicalId) {
+    return `${this.naming.getStackName()}-${deploymentGroupLogicalId}`
   }
 
   getFunctionName (slsFunctionName) {

@@ -110,10 +110,10 @@
                   "Effect": "Allow",
                   "Resource": [
                     {
-                      "Fn::Sub": "arn:${AWS::Partition}:codedeploy:${AWS::Region}:${AWS::AccountId}:deploymentgroup:${CanarydeploymentstestdevDeploymentApplication}/${HelloLambdaFunctionDeploymentGroup}"
+                      "Fn::Sub": "arn:${AWS::Partition}:codedeploy:${AWS::Region}:${AWS::AccountId}:deploymentgroup:${CanarydeploymentstestdevDeploymentApplication}/canary-deployments-test-dev-HelloLambdaFunctionDeploymentGroup"
                     },
                     {
-                      "Fn::Sub": "arn:${AWS::Partition}:codedeploy:${AWS::Region}:${AWS::AccountId}:deploymentgroup:${CanarydeploymentstestdevDeploymentApplication}/${GoodbyeLambdaFunctionDeploymentGroup}"
+                      "Fn::Sub": "arn:${AWS::Partition}:codedeploy:${AWS::Region}:${AWS::AccountId}:deploymentgroup:${CanarydeploymentstestdevDeploymentApplication}/canary-deployments-test-dev-GoodbyeLambdaFunctionDeploymentGroup"
                     }
                   ]
                 }
@@ -338,6 +338,7 @@
             }
           ]
         },
+        "DeploymentGroupName": "canary-deployments-test-dev-GoodbyeLambdaFunctionDeploymentGroup",
         "DeploymentStyle": {
           "DeploymentType": "BLUE_GREEN",
           "DeploymentOption": "WITH_TRAFFIC_CONTROL"
@@ -400,6 +401,7 @@
             }
           ]
         },
+        "DeploymentGroupName": "canary-deployments-test-dev-HelloLambdaFunctionDeploymentGroup",
         "DeploymentStyle": {
           "DeploymentType": "BLUE_GREEN",
           "DeploymentOption": "WITH_TRAFFIC_CONTROL"

@@ -124,7 +124,7 @@
                   "Effect": "Allow",
                   "Resource": [
                     {
-                      "Fn::Sub": "arn:${AWS::Partition}:codedeploy:${AWS::Region}:${AWS::AccountId}:deploymentgroup:${CanarydeploymentstestdevDeploymentApplication}/${HelloLambdaFunctionDeploymentGroup}"
+                      "Fn::Sub": "arn:${AWS::Partition}:codedeploy:${AWS::Region}:${AWS::AccountId}:deploymentgroup:${CanarydeploymentstestdevDeploymentApplication}/canary-deployments-test-dev-HelloLambdaFunctionDeploymentGroup"
                     }
                   ]
                 }
@@ -578,6 +578,7 @@
             }
           ]
         },
+        "DeploymentGroupName": "canary-deployments-test-dev-HelloLambdaFunctionDeploymentGroup",
         "DeploymentStyle": {
           "DeploymentType": "BLUE_GREEN",
           "DeploymentOption": "WITH_TRAFFIC_CONTROL"
