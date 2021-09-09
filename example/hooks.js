@@ -2,12 +2,12 @@ const aws = require('aws-sdk')
 const codedeploy = new aws.CodeDeploy({ apiVersion: '2014-10-06' })
 
 module.exports.pre = (event, context, callback) => {
-  var deploymentId = event.DeploymentId
-  var lifecycleEventHookExecutionId = event.LifecycleEventHookExecutionId
+  const deploymentId = event.DeploymentId
+  const lifecycleEventHookExecutionId = event.LifecycleEventHookExecutionId
 
   console.log('Check some stuff before shifting traffic...')
 
-  var params = {
+  const params = {
     deploymentId: deploymentId,
     lifecycleEventHookExecutionId: lifecycleEventHookExecutionId,
     status: 'Succeeded' // status can be 'Succeeded' or 'Failed'
@@ -19,12 +19,12 @@ module.exports.pre = (event, context, callback) => {
 }
 
 module.exports.post = (event, context, callback) => {
-  var deploymentId = event.DeploymentId
-  var lifecycleEventHookExecutionId = event.LifecycleEventHookExecutionId
+  const deploymentId = event.DeploymentId
+  const lifecycleEventHookExecutionId = event.LifecycleEventHookExecutionId
 
   console.log('Check some stuff after shifting traffic...')
 
-  var params = {
+  const params = {
     deploymentId: deploymentId,
     lifecycleEventHookExecutionId: lifecycleEventHookExecutionId,
     status: 'Succeeded' // status can be 'Succeeded' or 'Failed'

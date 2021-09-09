@@ -88,7 +88,7 @@
                   "Effect": "Allow",
                   "Resource": [
                     {
-                      "Fn::Sub": "arn:${AWS::Partition}:codedeploy:${AWS::Region}:${AWS::AccountId}:deploymentgroup:${CanarydeploymentstestdevDeploymentApplication}/${BelloLambdaFunctionDeploymentGroup}"
+                      "Fn::Sub": "arn:${AWS::Partition}:codedeploy:${AWS::Region}:${AWS::AccountId}:deploymentgroup:${CanarydeploymentstestdevDeploymentApplication}/canary-deployments-test-dev-BelloLambdaFunctionDeploymentGroup"
                     }
                   ]
                 }
@@ -285,6 +285,7 @@
             }
           ]
         },
+        "DeploymentGroupName": "canary-deployments-test-dev-BelloLambdaFunctionDeploymentGroup",
         "DeploymentStyle": {
           "DeploymentType": "BLUE_GREEN",
           "DeploymentOption": "WITH_TRAFFIC_CONTROL"
