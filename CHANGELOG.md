@@ -1,3 +1,6 @@
+# 0.7.0 (09.09.2021)
+- Generate a Deployment Group Name in the format of ${stackName}-${logicalId} to avoid a circular dependency when used with the aws-alerts plugin #135
+
 # 0.6.0 (31.03.2021)
 - Add config validator #102
 - Replace deprecated AWS managed policy for codedeploy #116
