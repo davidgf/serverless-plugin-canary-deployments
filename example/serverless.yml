@@ -2,7 +2,7 @@ service: canary-deployments-test
 
 provider:
   name: aws
-  runtime: nodejs10.x
+  runtime: nodejs14.x
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -31,7 +31,7 @@ functions:
     handler: handler.hello
     events:
       - websocket:
-          route: $default
+          route: $connect
           authorizer: authorize
       - http: GET hello
       - stream:
@@ -50,7 +50,7 @@ functions:
       - schedule:
           rate: rate(1 minute)
           enabled: false
-      - cloudwatchLog: "/aws/lambda/sls-wshop-dev-hello"
+      - cloudwatchLog: "/aws/lambda/canary-deployments-test-dev-hello"
       - sqs:
           arn:
             Fn::GetAtt:
