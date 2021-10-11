@@ -372,10 +372,7 @@
       "Type": "AWS::Lambda::Permission",
       "Properties": {
         "FunctionName": {
-          "Fn::GetAtt": [
-            "HelloLambdaFunction",
-            "Arn"
-          ]
+          "Ref": "HelloLambdaFunction"
         },
         "Action": "lambda:InvokeFunction",
         "Principal": "sns.amazonaws.com",
@@ -424,10 +421,7 @@
       "Type": "AWS::Lambda::Permission",
       "Properties": {
         "FunctionName": {
-          "Fn::GetAtt": [
-            "HelloLambdaFunction",
-            "Arn"
-          ]
+          "Ref": "HelloLambdaFunction"
         },
         "Action": "lambda:InvokeFunction",
         "Principal": "s3.amazonaws.com",
