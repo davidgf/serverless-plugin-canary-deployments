@@ -190,7 +190,7 @@ class ServerlessCanaryDeployments {
   }
 
   getDeploymentGroupName (deploymentGroupLogicalId) {
-    return `${this.naming.getStackName()}-${deploymentGroupLogicalId}`
+    return `${this.naming.getStackName()}-${deploymentGroupLogicalId}`.slice(0, 100)
   }
 
   getFunctionName (slsFunctionName) {
