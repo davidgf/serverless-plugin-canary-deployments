@@ -407,7 +407,7 @@ class ServerlessCanaryDeployments {
     const isPermissionForFunction = _.cond([
       [_.prop('Properties.FunctionName.Fn::GetAtt[0]'), _.matchesProperty('Properties.FunctionName.Fn::GetAtt[0]', functionName)],
       [_.prop('Properties.FunctionName.Ref'), _.matchesProperty('Properties.FunctionName.Ref', functionName)]
-    ]);
+    ])
 
     const getPermissionForFunction = _.pipe(
       _.pickBy(isLambdaPermission),
