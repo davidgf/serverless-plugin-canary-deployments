@@ -118,6 +118,7 @@ For now, the plugin only works with Lambda functions invoked by
 * CloudWatch Scheduled events
 * CloudWatch Logs
 * IoT rules
+* EventBridge
 
 [More events](https://serverless.com/framework/docs/providers/aws/events/) will be added soon.
 

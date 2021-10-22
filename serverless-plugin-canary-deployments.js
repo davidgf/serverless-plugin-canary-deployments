@@ -403,13 +403,11 @@ class ServerlessCanaryDeployments {
   }
 
   getLambdaPermissionsFor (functionName) {
-    const isLambdaPermission = _.matchesProperty('Type', 'AWS::Lambda::Permission')
-    const isPermissionForFunction = _.matchesProperty('Properties.FunctionName.Fn::GetAtt[0]', functionName)
-    const getPermissionForFunction = _.pipe(
-      _.pickBy(isLambdaPermission),
-      _.pickBy(isPermissionForFunction)
-    )
-    return getPermissionForFunction(this.compiledTpl.Resources)
+    const lambdaPermissions = _.pickBy(_.matchesProperty('Type', 'AWS::Lambda::Permission'))(this.compiledTpl.Resources)
+    const getByRef = _.pickBy(_.matchesProperty('Properties.FunctionName.Ref', functionName))(lambdaPermissions)
+    const getByGetFn = _.pickBy(_.matchesProperty('Properties.FunctionName.Fn::GetAtt[0]', functionName))(lambdaPermissions)
+
+    return _.isEmpty(getByGetFn) ? getByRef : getByGetFn
   }
 
   getResourceLogicalName (resource) {
