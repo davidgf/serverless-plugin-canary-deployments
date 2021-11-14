@@ -1,3 +1,7 @@
+# 0.7.1 (14.11.2021)
+- Truncate deployment group name to 100 characters #139
+- Add lambda permission to support function name ref #141
+
 # 0.7.0 (09.09.2021)
 - Generate a Deployment Group Name in the format of ${stackName}-${logicalId} to avoid a circular dependency when used with the aws-alerts plugin #135
 
