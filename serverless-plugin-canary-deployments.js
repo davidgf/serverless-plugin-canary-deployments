@@ -168,8 +168,8 @@ class ServerlessCanaryDeployments {
     const { alias } = deploymentSettings
     const functionVersion = this.getVersionNameFor(functionName)
     const logicalName = `${functionName}Alias${alias}`
-    const beforeHook = this.getFunctionName(deploymentSettings.preTrafficHook)
-    const afterHook = this.getFunctionName(deploymentSettings.postTrafficHook)
+    const beforeHook = this.getDeploymentHook(deploymentSettings.preTrafficHook)
+    const afterHook = this.getDeploymentHook(deploymentSettings.postTrafficHook)
     const trafficShiftingSettings = {
       codeDeployApp: this.codeDeployAppName,
       deploymentGroup,
@@ -195,6 +195,17 @@ class ServerlessCanaryDeployments {
 
   getFunctionName (slsFunctionName) {
     return slsFunctionName ? this.naming.getLambdaLogicalId(slsFunctionName) : null
+  }
+
+  getDeploymentHook (slsFunctionName) {
+    if (!slsFunctionName) {
+      return null
+    }
+
+    const isLambdaARN = slsFunctionName.includes('arn:aws:lambda')
+    return isLambdaARN
+      ? { 'Fn::Sub': slsFunctionName }
+      : { Ref: this.naming.getLambdaLogicalId(slsFunctionName) }
   }
 
   buildPermissionsForAlias ({ functionName, functionAlias }) {
