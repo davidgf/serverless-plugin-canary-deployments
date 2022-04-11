@@ -18,7 +18,7 @@ class ServerlessCanaryDeployments {
     this.naming = this.awsProvider.naming
     this.service = this.serverless.service
     this.hooks = {
-      'before:package:finalize': this.addCanaryDeploymentResources.bind(this)
+      'after:aws:package:finalize:mergeCustomProviderResources': this.addCanaryDeploymentResources.bind(this)
     }
     this.addConfigSchema()
   }
@@ -217,7 +217,8 @@ class ServerlessCanaryDeployments {
       'AWS::S3::Bucket': CfGenerators.s3.replaceS3BucketFunctionWithAlias,
       'AWS::Events::Rule': CfGenerators.cloudWatchEvents.replaceCloudWatchEventRuleTargetWithAlias,
       'AWS::Logs::SubscriptionFilter': CfGenerators.cloudWatchLogs.replaceCloudWatchLogsDestinationArnWithAlias,
-      'AWS::IoT::TopicRule': CfGenerators.iot.replaceIotTopicRuleActionArnWithAlias
+      'AWS::IoT::TopicRule': CfGenerators.iot.replaceIotTopicRuleActionArnWithAlias,
+      'AWS::AppSync::DataSource': CfGenerators.appSync.replaceAppSyncDataSourceWithAlias
     }
     const functionEvents = this.getEventsFor(functionName)
     const functionEventsEntries = _.entries(functionEvents)
@@ -239,6 +240,7 @@ class ServerlessCanaryDeployments {
     const cloudWatchEvents = this.getCloudWatchEventsFor(functionName)
     const cloudWatchLogs = this.getCloudWatchLogsFor(functionName)
     const iotTopicRules = this.getIotTopicRulesFor(functionName)
+    const appSyncDataSources = this.getAppSyncDataSourcesFor(functionName)
     return Object.assign(
       {},
       apiGatewayMethods,
@@ -250,7 +252,8 @@ class ServerlessCanaryDeployments {
       cloudWatchEvents,
       cloudWatchLogs,
       snsSubscriptions,
-      iotTopicRules
+      iotTopicRules,
+      appSyncDataSources
     )
   }
 
@@ -388,6 +391,19 @@ class ServerlessCanaryDeployments {
     const getMappingsForFunction = _.pipe(
       _.pickBy(isIotTopicRule),
       _.pickBy(isIotTopicRuleForFunction)
+    )
+    return getMappingsForFunction(this.compiledTpl.Resources)
+  }
+
+  getAppSyncDataSourcesFor (functionName) {
+    const isAppSyncDataSource = _.matchesProperty('Type', 'AWS::AppSync::DataSource')
+    const isAppSyncDataSourceForFunction = _.matchesProperty(
+      'Properties.LambdaConfig.LambdaFunctionArn.Fn::GetAtt[0]',
+      functionName
+    )
+    const getMappingsForFunction = _.pipe(
+      _.pickBy(isAppSyncDataSource),
+      _.pickBy(isAppSyncDataSourceForFunction)
     )
     return getMappingsForFunction(this.compiledTpl.Resources)
   }
