@@ -1,3 +1,6 @@
+# 0.8.0 (11.04.2022)
+- Add support for AppSync #144
+
 # 0.7.1 (14.11.2021)
 - Truncate deployment group name to 100 characters #139
 - Add lambda permission to support function name ref #141

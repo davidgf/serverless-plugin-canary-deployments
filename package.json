@@ -3,7 +3,7 @@
   "engines": {
     "node": ">=4.0"
   },
-  "version": "0.7.1",
+  "version": "0.8.0",
   "description": "A Serverless plugin to implement canary deployment of Lambda functions",
   "main": "serverless-plugin-canary-deployments.js",
   "scripts": {
