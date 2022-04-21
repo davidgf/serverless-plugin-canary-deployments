@@ -210,6 +210,7 @@ class ServerlessCanaryDeployments {
     const replaceAliasStrategy = {
       'AWS::Lambda::EventSourceMapping': CfGenerators.lambda.replaceEventMappingFunctionWithAlias,
       'AWS::ApiGateway::Method': CfGenerators.apiGateway.replaceMethodUriWithAlias,
+      'AWS::ApiGateway::Authorizer': CfGenerators.apiGateway.replaceAuthorizerUriWithAlias,
       'AWS::ApiGatewayV2::Integration': CfGenerators.apiGateway.replaceV2IntegrationUriWithAlias,
       'AWS::ApiGatewayV2::Authorizer': CfGenerators.apiGateway.replaceV2AuthorizerUriWithAlias,
       'AWS::SNS::Topic': CfGenerators.sns.replaceTopicSubscriptionFunctionWithAlias,
@@ -231,6 +232,7 @@ class ServerlessCanaryDeployments {
 
   getEventsFor (functionName) {
     const apiGatewayMethods = this.getApiGatewayMethodsFor(functionName)
+    const apiGatewayAuthorizers = this.getApiGatewayAuthorizersFor(functionName)
     const apiGatewayV2Methods = this.getApiGatewayV2MethodsFor(functionName)
     const apiGatewayV2Authorizers = this.getApiGatewayV2AuthorizersFor(functionName)
     const eventSourceMappings = this.getEventSourceMappingsFor(functionName)
@@ -244,6 +246,7 @@ class ServerlessCanaryDeployments {
     return Object.assign(
       {},
       apiGatewayMethods,
+      apiGatewayAuthorizers,
       apiGatewayV2Methods,
       apiGatewayV2Authorizers,
       eventSourceMappings,
@@ -275,6 +278,20 @@ class ServerlessCanaryDeployments {
     const isApiGMethod = _.matchesProperty('Type', 'AWS::ApiGatewayV2::Integration')
     const isMethodForFunction = _.pipe(
       _.prop('Properties.IntegrationUri'),
+      flattenObject,
+      _.includes(functionName)
+    )
+    const getMethodsForFunction = _.pipe(
+      _.pickBy(isApiGMethod),
+      _.pickBy(isMethodForFunction)
+    )
+    return getMethodsForFunction(this.compiledTpl.Resources)
+  }
+
+  getApiGatewayAuthorizersFor (functionName) {
+    const isApiGMethod = _.matchesProperty('Type', 'AWS::ApiGateway::Authorizer')
+    const isMethodForFunction = _.pipe(
+      _.prop('Properties.AuthorizerUri'),
       flattenObject,
       _.includes(functionName)
     )
