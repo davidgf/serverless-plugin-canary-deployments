@@ -133,9 +133,10 @@ class ServerlessCanaryDeployments {
     const aliasTpl = this.buildFunctionAlias({ deploymentSettings, functionName, deploymentGroup })
     const functionAlias = this.getResourceLogicalName(aliasTpl)
     const lambdaPermissions = this.buildPermissionsForAlias({ functionName, functionAlias })
+    const lambdaEventInvokeConfig = this.buildEventInvokeConfigForAlias({ functionName, functionAlias, deploymentSettings })
     const eventsWithAlias = this.buildEventsForAlias({ functionName, functionAlias })
 
-    return [deploymentGrTpl, aliasTpl, ...lambdaPermissions, ...eventsWithAlias]
+    return [deploymentGrTpl, aliasTpl, ...lambdaPermissions, ...eventsWithAlias, ...lambdaEventInvokeConfig]
   }
 
   buildCodeDeployApp () {
@@ -202,6 +203,16 @@ class ServerlessCanaryDeployments {
     return _.entries(permissions).map(([logicalName, template]) => {
       const templateWithAlias = CfGenerators.lambda
         .replacePermissionFunctionWithAlias(template, functionAlias)
+      return { [logicalName]: templateWithAlias }
+    })
+  }
+
+  buildEventInvokeConfigForAlias ({ functionName, functionAlias, deploymentSettings }) {
+    const eventconfig = this.getEventInvokeConfigFor(functionName)
+    const { alias } = deploymentSettings
+    return _.entries(eventconfig).map(([logicalName, template]) => {
+      const templateWithAlias = CfGenerators.lambda
+        .replaceEventInvokeConfigQualifierWithAlias(template, functionAlias, alias)
       return { [logicalName]: templateWithAlias }
     })
   }
@@ -431,6 +442,21 @@ class ServerlessCanaryDeployments {
     )
 
     return getPermissionForFunction(this.compiledTpl.Resources)
+  }
+
+  getEventInvokeConfigFor (functionName) {
+    const isEventInvokeConfig = _.matchesProperty('Type', 'AWS::Lambda::EventInvokeConfig')
+    const isEventInvokeConfigForFunction = _.cond([
+      [_.prop('Properties.FunctionName.Fn::GetAtt[0]'), _.matchesProperty('Properties.FunctionName.Fn::GetAtt[0]', functionName)],
+      [_.prop('Properties.FunctionName.Ref'), _.matchesProperty('Properties.FunctionName.Ref', functionName)]
+    ])
+
+    const getEventInvokeConfigForFunction = _.pipe(
+      _.pickBy(isEventInvokeConfig),
+      _.pickBy(isEventInvokeConfigForFunction)
+    )
+
+    return getEventInvokeConfigForFunction(this.compiledTpl.Resources)
   }
 
   getResourceLogicalName (resource) {
