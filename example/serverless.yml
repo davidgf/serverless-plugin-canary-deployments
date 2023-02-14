@@ -70,6 +70,8 @@ functions:
     deploymentSettings:
       type: Linear10PercentEvery1Minute
       alias: Live
+      disableAlarms: true
+      disableRollback: true
       preTrafficHook: preHook
       postTrafficHook: postHook
       alarms:
