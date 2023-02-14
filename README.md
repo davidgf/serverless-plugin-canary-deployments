@@ -75,7 +75,8 @@ You can see a working example in the [example folder](./example/).
 * `postTrafficHook`: (optional) validation Lambda function that runs after traffic shifting. It must use the CodeDeploy SDK to notify about this step's success or failure (more info [here](https://docs.aws.amazon.com/codedeploy/latest/userguide/reference-appspec-file-structure-hooks.html))
 * `alarms`: (optional) list of CloudWatch alarms. If any of them is triggered during the deployment, the associated Lambda function will automatically roll back to the previous version.
 * `triggerConfigurations`: (optional) list of CodeDeploy Triggers. See more details in the [CodeDeploy TriggerConfiguration Documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-codedeploy-deploymentgroup-triggerconfig.html), or [this CodeDeploy notifications guide](https://docs.aws.amazon.com/codedeploy/latest/userguide/monitoring-sns-event-notifications-create-trigger.html) for example uses
-
+* `disableRollback`: (optional) disables the rollback of the canary deployment if it fails.  Defaults to false.
+* `disableAlarms`: (optional) disables the alarms for the canary deployment.  Defaults to false.
 ### Default configurations
 
 You can set default values for all functions in a top-level custom deploymentSettings section.  E.g.:
