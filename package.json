@@ -3,16 +3,18 @@
   "engines": {
     "node": ">=4.0"
   },
-  "version": "0.5.1",
+  "version": "0.8.0",
   "description": "A Serverless plugin to implement canary deployment of Lambda functions",
   "main": "serverless-plugin-canary-deployments.js",
   "scripts": {
-    "test": "NODE_ENV=test ./node_modules/mocha/bin/mocha $(find ./ -name '*.test.js' -not -path '.*/node_modules/*')",
-    "watch": "NODE_ENV=test ./node_modules/mocha/bin/mocha -w $(find ./ -name '*.test.js' -not -path '*/node_modules/*')"
+    "test": "npm run lint && NODE_ENV=test ./node_modules/mocha/bin/mocha $(find ./ -name '*.test.js' -not -path '.*/node_modules/*')",
+    "watch": "NODE_ENV=test ./node_modules/mocha/bin/mocha -w $(find ./ -name '*.test.js' -not -path '*/node_modules/*')",
+    "lint": "standard"
   },
   "author": "David García <davidgf1987@gmail.com>",
   "contributors": [
-    "Carlos Castellanos <ccverak@gmail.com> (https://github.com/ccverak/)"
+    "Carlos Castellanos <me@carloscastellanosvera.com> (https://github.com/ccverak/)",
+    "Kartikeya Verma <kverma23@outlook.com> (https://github.com/kverma23/)"
   ],
   "license": "ISC",
   "repository": {
@@ -20,20 +22,17 @@
     "type": "git"
   },
   "dependencies": {
-    "flat": "^4.0.0",
-    "lodash": "^4.17.21",
+    "flat": "^4.1.0",
+    "lodash": "^4.17.20",
     "omit-empty": "^0.4.1"
   },
   "devDependencies": {
-    "chai": "^4.1.2",
-    "eslint": "^7.31.0",
-    "eslint-config-airbnb": "^16.1.0",
-    "eslint-plugin-import": "^2.9.0",
-    "eslint-plugin-jsx-a11y": "^6.0.3",
-    "eslint-plugin-react": "^7.7.0",
-    "get-installed-path": "^2.1.0",
-    "mocha": "^9.0.3",
-    "serverless": "2.22.0"
+    "chai": "^4.2.0",
+    "get-installed-path": "^4.0.8",
+    "husky": "^3.0.1",
+    "mocha": "^8.2.1",
+    "serverless": "^2.22.0",
+    "standard": "*"
   },
   "peerDependencies": {
     "serverless": ">= 1.26.0"
@@ -45,5 +44,21 @@
     "canary",
     "gradual",
     "deployments"
-  ]
+  ],
+  "husky": {
+    "hooks": {
+      "pre-push": "npm test"
+    }
+  },
+  "standard": {
+    "globals": [
+      "describe",
+      "context",
+      "it",
+      "before",
+      "after",
+      "beforeEach",
+      "afterEach"
+    ]
+  }
 }

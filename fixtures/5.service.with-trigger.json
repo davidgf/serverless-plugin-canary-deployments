@@ -1,0 +1,66 @@
+{
+  "service": "canary-deployments-test",
+  "custom": {
+    "deploymentSettings": {
+      "stages": [
+        "dev"
+      ]
+    }
+  },
+  "functions": {
+    "hello": {
+      "handler": "handler.hello",
+      "events": [
+        {
+          "http": "GET hello"
+        },
+        {
+          "stream": {
+            "type": "dynamodb",
+            "arn": {
+              "Fn::GetAtt": [
+                "StreamsTestTable",
+                "StreamArn"
+              ]
+            }
+          }
+        },
+        {
+          "sns": "snsTopic"
+        },
+        {
+          "s3": "s3SampleBucket"
+        }
+      ],
+      "deploymentSettings": {
+        "type": "Linear10PercentEvery1Minute",
+        "alias": "Live",
+        "preTrafficHook": "preHook",
+        "postTrafficHook": "postHook",
+        "alarms": [
+          "HelloFooAlarm"
+        ],
+        "triggerConfigurations": [
+          {
+            "TriggerName": "Deploy Notifications",
+            "TriggerEvents": [
+              "DeploymentStart",
+              "DeploymentSuccess",
+              "DeploymentFailure",
+              "DeploymentStop",
+              "DeploymentRollback",
+              "DeploymentReady"
+            ],
+            "TargetTriggerArn": "arn:aws:sns:region:account-id:topicname"
+          }
+        ]
+      }
+    },
+    "preHook": {
+      "handler": "hooks.pre"
+    },
+    "postHook": {
+      "handler": "hooks.post"
+    }
+  }
+}

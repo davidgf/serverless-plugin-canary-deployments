@@ -2,7 +2,7 @@ service: canary-deployments-test
 
 provider:
   name: aws
-  runtime: nodejs6.10
+  runtime: nodejs14.x
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -22,9 +22,17 @@ custom:
       - prod
 
 functions:
+  authorize:
+    handler: handler.authorize
+    deploymentSettings:
+      type: Linear10PercentEvery1Minute
+      alias: Live
   hello:
     handler: handler.hello
     events:
+      - websocket:
+          route: $connect
+          authorizer: authorize
       - http: GET hello
       - stream:
           type: dynamodb
@@ -33,7 +41,23 @@ functions:
               - StreamsTestTable
               - StreamArn
       - sns: snsTopic
-      # - s3: s3samplebucket
+      - sns:
+          topicName: fooTopic
+          displayName: fooTopic
+          filterPolicy:
+            eventType:
+              - FooEvent
+      - schedule:
+          rate: rate(1 minute)
+          enabled: false
+      - cloudwatchLog: "/aws/lambda/canary-deployments-test-dev-hello"
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - MyQueue
+              - Arn
+      - iot:
+          sql: "SELECT * FROM 'some_topic'"
     alarms:
       - name: foo
         namespace: 'AWS/Lambda'
@@ -72,3 +96,8 @@ resources:
           WriteCapacityUnits: 1
         StreamSpecification:
           StreamViewType: NEW_AND_OLD_IMAGES
+    MyQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        DelaySeconds: 0
+        VisibilityTimeout: 120

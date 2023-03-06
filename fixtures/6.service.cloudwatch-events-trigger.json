@@ -1,0 +1,39 @@
+{
+  "service": "canary-deployments-test",
+  "custom": {
+    "deploymentSettings": {
+      "stages": [
+        "dev"
+      ]
+    }
+  },
+  "functions": {
+    "hello": {
+      "handler": "handler.hello",
+      "events": [
+        {
+          "schedule": {
+            "name": "test-scheduled-event",
+            "rate": "rate(1 minute)",
+            "enabled": true
+          }
+        }
+      ],
+      "deploymentSettings": {
+        "type": "Linear10PercentEvery1Minute",
+        "alias": "Live",
+        "preTrafficHook": "preHook",
+        "postTrafficHook": "postHook",
+        "alarms": [
+          "HelloFooAlarm"
+        ]
+      }
+    },
+    "preHook": {
+      "handler": "hooks.pre"
+    },
+    "postHook": {
+      "handler": "hooks.post"
+    }
+  }
+}

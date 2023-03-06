@@ -1,0 +1,1195 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "The AWS CloudFormation template for this Serverless application",
+  "Resources": {
+    "ServerlessDeploymentBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            {
+              "ServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "AES256"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "ServerlessDeploymentBucketPolicy": {
+      "Type": "AWS::S3::BucketPolicy",
+      "Properties": {
+        "Bucket": {
+          "Ref": "ServerlessDeploymentBucket"
+        },
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "s3:*",
+              "Effect": "Deny",
+              "Principal": "*",
+              "Resource": [
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":s3:::",
+                      {
+                        "Ref": "ServerlessDeploymentBucket"
+                      },
+                      "/*"
+                    ]
+                  ]
+                }
+              ],
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": false
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "AuthorizeLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/canary-deployments-test-dev-authorize"
+      }
+    },
+    "HelloLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/canary-deployments-test-dev-hello"
+      }
+    },
+    "PreHookLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/canary-deployments-test-dev-preHook"
+      }
+    },
+    "PostHookLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/canary-deployments-test-dev-postHook"
+      }
+    },
+    "IamRoleLambdaExecution": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "lambda.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": {
+              "Fn::Join": [
+                "-",
+                [
+                  "dev",
+                  "canary-deployments-test",
+                  "lambda"
+                ]
+              ]
+            },
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/canary-deployments-test-dev*:*"
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/canary-deployments-test-dev*:*:*"
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "codedeploy:*"
+                  ],
+                  "Resource": [
+                    "*"
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "execute-api:ManageConnections"
+                  ],
+                  "Resource": [
+                    "arn:aws:execute-api:*:*:*/@connections/*"
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "dynamodb:GetRecords",
+                    "dynamodb:GetShardIterator",
+                    "dynamodb:DescribeStream",
+                    "dynamodb:ListStreams"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "StreamsTestTable",
+                        "StreamArn"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "sqs:ReceiveMessage",
+                    "sqs:DeleteMessage",
+                    "sqs:GetQueueAttributes"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "MyQueue",
+                        "Arn"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "Action": [
+                    "codedeploy:PutLifecycleEventHookExecutionStatus"
+                  ],
+                  "Effect": "Allow",
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:codedeploy:${AWS::Region}:${AWS::AccountId}:deploymentgroup:${CanarydeploymentstestdevDeploymentApplication}/canary-deployments-test-dev-HelloLambdaFunctionDeploymentGroup"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "Path": "/",
+        "RoleName": {
+          "Fn::Join": [
+            "-",
+            [
+              "canary-deployments-test",
+              "dev",
+              {
+                "Ref": "AWS::Region"
+              },
+              "lambdaRole"
+            ]
+          ]
+        }
+      }
+    },
+    "AuthorizeLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/canary-deployments-test/dev/1575930299000-2019-12-09T22:24:59.000Z/canary-deployments-test.zip"
+        },
+        "FunctionName": "canary-deployments-test-dev-authorize",
+        "Handler": "handler.authorize",
+        "MemorySize": 1024,
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs10.x",
+        "Timeout": 6
+      },
+      "DependsOn": [
+        "AuthorizeLogGroup",
+        "IamRoleLambdaExecution"
+      ]
+    },
+    "AuthorizeLambdaVersionbTfsT57iU4ZfOGZTf3Zj4S1BeSuy3parpc3gsEQB14": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "AuthorizeLambdaFunction"
+        },
+        "CodeSha256": "Ofxyq/kgN80mbxe4T0albpCu+wmd3J6qqY/ur4VFDMQ="
+      }
+    },
+    "HelloLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/canary-deployments-test/dev/1575930299000-2019-12-09T22:24:59.000Z/canary-deployments-test.zip"
+        },
+        "FunctionName": "canary-deployments-test-dev-hello",
+        "Handler": "handler.hello",
+        "MemorySize": 1024,
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs10.x",
+        "Timeout": 6
+      },
+      "DependsOn": [
+        "HelloLogGroup",
+        "IamRoleLambdaExecution"
+      ]
+    },
+    "HelloLambdaVersionc1BYUZExb51lc5z0vanRRxW4Wn9wVPF1MZ7NcARvig": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "HelloLambdaFunction"
+        },
+        "CodeSha256": "Ofxyq/kgN80mbxe4T0albpCu+wmd3J6qqY/ur4VFDMQ="
+      }
+    },
+    "PreHookLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/canary-deployments-test/dev/1575930299000-2019-12-09T22:24:59.000Z/canary-deployments-test.zip"
+        },
+        "FunctionName": "canary-deployments-test-dev-preHook",
+        "Handler": "hooks.pre",
+        "MemorySize": 1024,
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs10.x",
+        "Timeout": 6
+      },
+      "DependsOn": [
+        "PreHookLogGroup",
+        "IamRoleLambdaExecution"
+      ]
+    },
+    "PreHookLambdaVersiondpbHvoFBPQYrU4rmE0qY9NDi4L98YHpjapLePRTv8Q": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "PreHookLambdaFunction"
+        },
+        "CodeSha256": "Ofxyq/kgN80mbxe4T0albpCu+wmd3J6qqY/ur4VFDMQ="
+      }
+    },
+    "PostHookLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/canary-deployments-test/dev/1575930299000-2019-12-09T22:24:59.000Z/canary-deployments-test.zip"
+        },
+        "FunctionName": "canary-deployments-test-dev-postHook",
+        "Handler": "hooks.post",
+        "MemorySize": 1024,
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs10.x",
+        "Timeout": 6
+      },
+      "DependsOn": [
+        "PostHookLogGroup",
+        "IamRoleLambdaExecution"
+      ]
+    },
+    "PostHookLambdaVersionoEafgDXpRIiDAmp1U2sE8MReDiTTacw8XlwC1prVjH8": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "PostHookLambdaFunction"
+        },
+        "CodeSha256": "Ofxyq/kgN80mbxe4T0albpCu+wmd3J6qqY/ur4VFDMQ="
+      }
+    },
+    "HelloEventsRuleSchedule1": {
+      "Type": "AWS::Events::Rule",
+      "Properties": {
+        "ScheduleExpression": "rate(1 minute)",
+        "State": "DISABLED",
+        "Targets": [
+          {
+            "Arn": {
+              "Ref": "HelloLambdaFunctionAliasLive"
+            },
+            "Id": "helloSchedule"
+          }
+        ]
+      }
+    },
+    "HelloLambdaPermissionEventsRuleSchedule1": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "HelloLambdaFunctionAliasLive"
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "events.amazonaws.com",
+        "SourceArn": {
+          "Fn::GetAtt": [
+            "HelloEventsRuleSchedule1",
+            "Arn"
+          ]
+        }
+      }
+    },
+    "ApiGatewayRestApi": {
+      "Type": "AWS::ApiGateway::RestApi",
+      "Properties": {
+        "Name": "dev-canary-deployments-test",
+        "EndpointConfiguration": {
+          "Types": [
+            "EDGE"
+          ]
+        }
+      }
+    },
+    "ApiGatewayResourceHello": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "ParentId": {
+          "Fn::GetAtt": [
+            "ApiGatewayRestApi",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "hello",
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        }
+      }
+    },
+    "ApiGatewayMethodHelloGet": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "HttpMethod": "GET",
+        "RequestParameters": {},
+        "ResourceId": {
+          "Ref": "ApiGatewayResourceHello"
+        },
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        },
+        "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Ref": "HelloLambdaFunctionAliasLive"
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": []
+      }
+    },
+    "ApiGatewayDeployment1575930276029": {
+      "Type": "AWS::ApiGateway::Deployment",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        },
+        "StageName": "dev"
+      },
+      "DependsOn": [
+        "ApiGatewayMethodHelloGet"
+      ]
+    },
+    "HelloLambdaPermissionApiGateway": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "HelloLambdaFunctionAliasLive"
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "/*/*"
+            ]
+          ]
+        }
+      }
+    },
+    "WebsocketsApi": {
+      "Type": "AWS::ApiGatewayV2::Api",
+      "Properties": {
+        "Name": "dev-canary-deployments-test-websockets",
+        "RouteSelectionExpression": "$request.body.action",
+        "Description": "Serverless Websockets",
+        "ProtocolType": "WEBSOCKET"
+      }
+    },
+    "HelloWebsocketsIntegration": {
+      "Type": "AWS::ApiGatewayV2::Integration",
+      "Properties": {
+        "ApiId": {
+          "Ref": "WebsocketsApi"
+        },
+        "IntegrationType": "AWS_PROXY",
+        "IntegrationUri": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":apigateway:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":lambda:path/2015-03-31/functions/",
+              {
+                "Ref": "HelloLambdaFunctionAliasLive"
+              },
+              "/invocations"
+            ]
+          ]
+        }
+      }
+    },
+    "AuthorizeWebsocketsAuthorizer": {
+      "Type": "AWS::ApiGatewayV2::Authorizer",
+      "Properties": {
+        "ApiId": {
+          "Ref": "WebsocketsApi"
+        },
+        "Name": "authorize",
+        "AuthorizerType": "REQUEST",
+        "AuthorizerUri": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":apigateway:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":lambda:path/2015-03-31/functions/",
+              {
+                "Ref": "AuthorizeLambdaFunctionAliasLive"
+              },
+              "/invocations"
+            ]
+          ]
+        },
+        "IdentitySource": [
+          "route.request.header.Auth"
+        ]
+      }
+    },
+    "HelloLambdaPermissionWebsockets": {
+      "Type": "AWS::Lambda::Permission",
+      "DependsOn": [
+        "WebsocketsApi",
+        "HelloLambdaFunction"
+      ],
+      "Properties": {
+        "FunctionName": {
+          "Ref": "HelloLambdaFunctionAliasLive"
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "apigateway.amazonaws.com"
+      }
+    },
+    "AuthorizeLambdaPermissionWebsockets": {
+      "Type": "AWS::Lambda::Permission",
+      "DependsOn": [
+        "WebsocketsApi",
+        "AuthorizeLambdaFunction"
+      ],
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "Principal": "apigateway.amazonaws.com",
+        "FunctionName": {
+          "Ref": "AuthorizeLambdaFunctionAliasLive"
+        }
+      }
+    },
+    "SdefaultWebsocketsRoute": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "WebsocketsApi"
+        },
+        "RouteKey": "$default",
+        "AuthorizationType": "CUSTOM",
+        "Target": {
+          "Fn::Join": [
+            "/",
+            [
+              "integrations",
+              {
+                "Ref": "HelloWebsocketsIntegration"
+              }
+            ]
+          ]
+        },
+        "AuthorizerId": {
+          "Ref": "AuthorizeWebsocketsAuthorizer"
+        }
+      }
+    },
+    "WebsocketsDeployment1575930276029": {
+      "Type": "AWS::ApiGatewayV2::Deployment",
+      "DependsOn": [
+        "SdefaultWebsocketsRoute"
+      ],
+      "Properties": {
+        "ApiId": {
+          "Ref": "WebsocketsApi"
+        },
+        "Description": "Serverless Websockets"
+      }
+    },
+    "WebsocketsDeploymentStage": {
+      "Type": "AWS::ApiGatewayV2::Stage",
+      "Properties": {
+        "ApiId": {
+          "Ref": "WebsocketsApi"
+        },
+        "DeploymentId": {
+          "Ref": "WebsocketsDeployment1575930276029"
+        },
+        "StageName": "dev",
+        "Description": "Serverless Websockets"
+      }
+    },
+    "SNSTopicSnsTopic": {
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "TopicName": "snsTopic",
+        "DisplayName": "",
+        "Subscription": [
+          {
+            "Endpoint": {
+              "Ref": "HelloLambdaFunctionAliasLive"
+            },
+            "Protocol": "lambda"
+          }
+        ]
+      }
+    },
+    "HelloLambdaPermissionSnsTopicSNS": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "HelloLambdaFunctionAliasLive"
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "sns.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":sns:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              "snsTopic"
+            ]
+          ]
+        }
+      }
+    },
+    "SNSTopicFooTopic": {
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "TopicName": "fooTopic",
+        "DisplayName": "fooTopic"
+      }
+    },
+    "HelloSnsSubscriptionFooTopic": {
+      "Type": "AWS::SNS::Subscription",
+      "Properties": {
+        "Endpoint": {
+          "Ref": "HelloLambdaFunctionAliasLive"
+        },
+        "Protocol": "lambda",
+        "TopicArn": {
+          "Ref": "SNSTopicFooTopic"
+        },
+        "FilterPolicy": {
+          "eventType": [
+            "FooEvent"
+          ]
+        }
+      }
+    },
+    "HelloLambdaPermissionFooTopicSNS": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "HelloLambdaFunctionAliasLive"
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "sns.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":sns:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              "fooTopic"
+            ]
+          ]
+        }
+      }
+    },
+    "HelloEventSourceMappingDynamodbStreamsTestTable": {
+      "Type": "AWS::Lambda::EventSourceMapping",
+      "DependsOn": "IamRoleLambdaExecution",
+      "Properties": {
+        "BatchSize": 10,
+        "ParallelizationFactor": 1,
+        "EventSourceArn": {
+          "Fn::GetAtt": [
+            "StreamsTestTable",
+            "StreamArn"
+          ]
+        },
+        "FunctionName": {
+          "Ref": "HelloLambdaFunctionAliasLive"
+        },
+        "StartingPosition": "TRIM_HORIZON",
+        "Enabled": "True"
+      }
+    },
+    "HelloIotTopicRule1": {
+      "Type": "AWS::IoT::TopicRule",
+      "Properties": {
+        "TopicRulePayload": {
+          "RuleDisabled": "false",
+          "Sql": "SELECT * FROM 'some_topic'",
+          "Actions": [
+            {
+              "Lambda": {
+                "FunctionArn": {
+                  "Ref": "HelloLambdaFunctionAliasLive"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "HelloLambdaPermissionIotTopicRule1": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "HelloLambdaFunctionAliasLive"
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "iot.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":iot:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":rule/",
+              {
+                "Ref": "HelloIotTopicRule1"
+              }
+            ]
+          ]
+        }
+      }
+    },
+    "HelloLogsSubscriptionFilterCloudWatchLog1": {
+      "Type": "AWS::Logs::SubscriptionFilter",
+      "DependsOn": "HelloLambdaPermissionLogsSubscriptionFilterCloudWatchLog",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/sls-wshop-dev-hello",
+        "FilterPattern": "",
+        "DestinationArn": {
+          "Ref": "HelloLambdaFunctionAliasLive"
+        }
+      }
+    },
+    "HelloLambdaPermissionLogsSubscriptionFilterCloudWatchLog": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "HelloLambdaFunctionAliasLive"
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": {
+          "Fn::Join": [
+            "",
+            [
+              "logs.",
+              {
+                "Ref": "AWS::Region"
+              },
+              ".amazonaws.com"
+            ]
+          ]
+        },
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":logs:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":log-group:",
+              "/aws/lambda/sls-wshop-dev-hello",
+              ":*"
+            ]
+          ]
+        }
+      }
+    },
+    "HelloEventSourceMappingSQSMyQueue": {
+      "Type": "AWS::Lambda::EventSourceMapping",
+      "DependsOn": "IamRoleLambdaExecution",
+      "Properties": {
+        "BatchSize": 10,
+        "EventSourceArn": {
+          "Fn::GetAtt": [
+            "MyQueue",
+            "Arn"
+          ]
+        },
+        "FunctionName": {
+          "Ref": "HelloLambdaFunctionAliasLive"
+        },
+        "Enabled": "True"
+      }
+    },
+    "HelloFooAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "Namespace": "AWS/Lambda",
+        "MetricName": "Errors",
+        "Threshold": 1,
+        "Period": 60,
+        "EvaluationPeriods": 1,
+        "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+        "OKActions": [],
+        "AlarmActions": [],
+        "InsufficientDataActions": [],
+        "Dimensions": [
+          {
+            "Name": "FunctionName",
+            "Value": {
+              "Ref": "HelloLambdaFunction"
+            }
+          }
+        ],
+        "TreatMissingData": "missing",
+        "Statistic": "Minimum"
+      }
+    },
+    "CanarydeploymentstestdevDeploymentApplication": {
+      "Type": "AWS::CodeDeploy::Application",
+      "Properties": {
+        "ComputePlatform": "Lambda"
+      }
+    },
+    "CodeDeployServiceRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "ManagedPolicyArns": [
+          "arn:aws:iam::aws:policy/service-role/AWSCodeDeployRoleForLambdaLimited",
+          "arn:aws:iam::aws:policy/AWSLambda_FullAccess"
+        ],
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Action": [
+                "sts:AssumeRole"
+              ],
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "codedeploy.amazonaws.com"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    "AuthorizeLambdaFunctionDeploymentGroup": {
+      "Type": "AWS::CodeDeploy::DeploymentGroup",
+      "Properties": {
+        "ApplicationName": {
+          "Ref": "CanarydeploymentstestdevDeploymentApplication"
+        },
+        "AutoRollbackConfiguration": {
+          "Enabled": true,
+          "Events": [
+            "DEPLOYMENT_FAILURE",
+            "DEPLOYMENT_STOP_ON_ALARM",
+            "DEPLOYMENT_STOP_ON_REQUEST"
+          ]
+        },
+        "DeploymentConfigName": {
+          "Fn::Sub": [
+            "CodeDeployDefault.Lambda${ConfigName}",
+            {
+              "ConfigName": "Linear10PercentEvery1Minute"
+            }
+          ]
+        },
+        "DeploymentGroupName": "canary-deployments-test-dev-AuthorizeLambdaFunctionDeploymentGroup",
+        "DeploymentStyle": {
+          "DeploymentType": "BLUE_GREEN",
+          "DeploymentOption": "WITH_TRAFFIC_CONTROL"
+        },
+        "ServiceRoleArn": {
+          "Fn::GetAtt": [
+            "CodeDeployServiceRole",
+            "Arn"
+          ]
+        }
+      }
+    },
+    "AuthorizeLambdaFunctionAliasLive": {
+      "Type": "AWS::Lambda::Alias",
+      "Properties": {
+        "FunctionVersion": {
+          "Fn::GetAtt": [
+            "AuthorizeLambdaVersionbTfsT57iU4ZfOGZTf3Zj4S1BeSuy3parpc3gsEQB14",
+            "Version"
+          ]
+        },
+        "FunctionName": {
+          "Ref": "AuthorizeLambdaFunction"
+        },
+        "Name": "Live"
+      },
+      "UpdatePolicy": {
+        "CodeDeployLambdaAliasUpdate": {
+          "ApplicationName": {
+            "Ref": "CanarydeploymentstestdevDeploymentApplication"
+          },
+          "DeploymentGroupName": {
+            "Ref": "AuthorizeLambdaFunctionDeploymentGroup"
+          }
+        }
+      }
+    },
+    "HelloLambdaFunctionDeploymentGroup": {
+      "Type": "AWS::CodeDeploy::DeploymentGroup",
+      "Properties": {
+        "ApplicationName": {
+          "Ref": "CanarydeploymentstestdevDeploymentApplication"
+        },
+        "AutoRollbackConfiguration": {
+          "Enabled": true,
+          "Events": [
+            "DEPLOYMENT_FAILURE",
+            "DEPLOYMENT_STOP_ON_ALARM",
+            "DEPLOYMENT_STOP_ON_REQUEST"
+          ]
+        },
+        "DeploymentConfigName": {
+          "Fn::Sub": [
+            "CodeDeployDefault.Lambda${ConfigName}",
+            {
+              "ConfigName": "Linear10PercentEvery1Minute"
+            }
+          ]
+        },
+        "DeploymentGroupName": "canary-deployments-test-dev-HelloLambdaFunctionDeploymentGroup",
+        "DeploymentStyle": {
+          "DeploymentType": "BLUE_GREEN",
+          "DeploymentOption": "WITH_TRAFFIC_CONTROL"
+        },
+        "ServiceRoleArn": {
+          "Fn::GetAtt": [
+            "CodeDeployServiceRole",
+            "Arn"
+          ]
+        },
+        "AlarmConfiguration": {
+          "Alarms": [
+            {
+              "Name": {
+                "Ref": "HelloFooAlarm"
+              }
+            }
+          ],
+          "Enabled": true
+        }
+      }
+    },
+    "HelloLambdaFunctionAliasLive": {
+      "Type": "AWS::Lambda::Alias",
+      "Properties": {
+        "FunctionVersion": {
+          "Fn::GetAtt": [
+            "HelloLambdaVersionc1BYUZExb51lc5z0vanRRxW4Wn9wVPF1MZ7NcARvig",
+            "Version"
+          ]
+        },
+        "FunctionName": {
+          "Ref": "HelloLambdaFunction"
+        },
+        "Name": "Live"
+      },
+      "UpdatePolicy": {
+        "CodeDeployLambdaAliasUpdate": {
+          "ApplicationName": {
+            "Ref": "CanarydeploymentstestdevDeploymentApplication"
+          },
+          "AfterAllowTrafficHook": {
+            "Ref": "PostHookLambdaFunction"
+          },
+          "BeforeAllowTrafficHook": {
+            "Ref": "PreHookLambdaFunction"
+          },
+          "DeploymentGroupName": {
+            "Ref": "HelloLambdaFunctionDeploymentGroup"
+          }
+        }
+      }
+    },
+    "StreamsTestTable": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "TableName": "StreamsTestTable",
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "id",
+            "AttributeType": "S"
+          }
+        ],
+        "KeySchema": [
+          {
+            "AttributeName": "id",
+            "KeyType": "HASH"
+          }
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": 1,
+          "WriteCapacityUnits": 1
+        },
+        "StreamSpecification": {
+          "StreamViewType": "NEW_AND_OLD_IMAGES"
+        }
+      }
+    },
+    "MyQueue": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "DelaySeconds": 0,
+        "VisibilityTimeout": 120
+      }
+    }
+  },
+  "Outputs": {
+    "ServerlessDeploymentBucketName": {
+      "Value": {
+        "Ref": "ServerlessDeploymentBucket"
+      }
+    },
+    "AuthorizeLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "AuthorizeLambdaVersionbTfsT57iU4ZfOGZTf3Zj4S1BeSuy3parpc3gsEQB14"
+      }
+    },
+    "HelloLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "HelloLambdaVersionc1BYUZExb51lc5z0vanRRxW4Wn9wVPF1MZ7NcARvig"
+      }
+    },
+    "PreHookLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "PreHookLambdaVersiondpbHvoFBPQYrU4rmE0qY9NDi4L98YHpjapLePRTv8Q"
+      }
+    },
+    "PostHookLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "PostHookLambdaVersionoEafgDXpRIiDAmp1U2sE8MReDiTTacw8XlwC1prVjH8"
+      }
+    },
+    "ServiceEndpoint": {
+      "Description": "URL of the service endpoint",
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://",
+            {
+              "Ref": "ApiGatewayRestApi"
+            },
+            ".execute-api.",
+            {
+              "Ref": "AWS::Region"
+            },
+            ".",
+            {
+              "Ref": "AWS::URLSuffix"
+            },
+            "/dev"
+          ]
+        ]
+      }
+    },
+    "ServiceEndpointWebsocket": {
+      "Description": "URL of the service endpoint",
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "wss://",
+            {
+              "Ref": "WebsocketsApi"
+            },
+            ".execute-api.",
+            {
+              "Ref": "AWS::Region"
+            },
+            ".",
+            {
+              "Ref": "AWS::URLSuffix"
+            },
+            "/dev"
+          ]
+        ]
+      }
+    }
+  }
+}

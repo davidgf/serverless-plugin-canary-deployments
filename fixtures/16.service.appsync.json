@@ -1,0 +1,61 @@
+{
+  "service": "canary-deployments-test-appsync-datasources",
+  "custom": {
+    "deploymentSettings": {
+      "stages": [
+        "dev"
+      ]
+    }
+  },
+  "functions": {
+    "hello": {
+      "handler": "handler.hello",
+      "events": [
+        {
+          "http": "GET hello"
+        },
+        {
+          "s3": "s3SampleBucket"
+        }
+      ],
+      "deploymentSettings": {
+        "type": "Linear10PercentEvery1Minute",
+        "alias": "Live",
+        "preTrafficHook": "preHook",
+        "postTrafficHook": "postHook",
+        "alarms": [
+          "HelloFooAlarm"
+        ]
+      }
+    },
+    "preHook": {
+      "handler": "hooks.pre"
+    },
+    "postHook": {
+      "handler": "hooks.post"
+    }
+  },
+  "resources": {
+    "Resources": {
+      "Type": "AWS::AppSync::DataSource",
+      "Properties": {
+        "ApiId": "TestApi",
+        "Description": "Hello Lambda DataSource",
+        "LambdaConfig": {
+          "Fn::GetAtt": [
+            "HelloLambdaFunction",
+            "Arn"
+          ]
+        },
+        "Name": "test-lambda-datasource",
+        "ServiceRoleArn": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        },
+        "Type": "AWS_LAMBDA"
+      }
+    }
+  }
+}
