@@ -22,7 +22,7 @@
     "type": "git"
   },
   "dependencies": {
-    "flat": "^4.1.0",
+    "flat": "^5.0.1",
     "lodash": "^4.17.20",
     "omit-empty": "^0.4.1"
   },
