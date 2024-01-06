@@ -1,0 +1,57 @@
+{
+  "service": "canary-deployments-test",
+  "custom": {
+    "deploymentSettings": {
+      "stages": [
+        "dev"
+      ]
+    }
+  },
+  "functions": {
+    "hello": {
+      "handler": "handler.hello",
+      "events": [
+        {
+          "alb": {
+            "listenerArn": "arn:aws:elasticloadbalancing:region:account-id:listener/app/my-load-balancer/50dc6c495c0c9188/f2f7dc8efc522ab2",
+            "priority": 1,
+            "conditions": {
+              "path": "/hello",
+              "host": "example.com",
+              "method": "GET"
+            }
+          }
+        }
+      ],
+      "provisionedConcurrency": 1,
+      "deploymentSettings": {
+        "type": "Linear10PercentEvery1Minute",
+        "alias": "custom"
+      },
+      "targetAlias": {
+        "logicalId": "HelloProvConcLambdaAlias",
+        "name": "provisioned"
+      }
+    },
+    "helloNoProvisioned": {
+      "handler": "handler.helloNoProvisioned",
+      "events": [
+        {
+          "alb": {
+            "listenerArn": "arn:aws:elasticloadbalancing:region:account-id:listener/app/my-load-balancer/50dc6c495c0c9188/f2f7dc8efc522ab2",
+            "priority": 2,
+            "conditions": {
+              "path": "/helloNoProvisioned",
+              "host": "example.com",
+              "method": "GET"
+            }
+          }
+        }
+      ],
+      "deploymentSettings": {
+        "type": "Linear10PercentEvery1Minute",
+        "alias": "custom"
+      }
+    }
+  }
+}

@@ -1,0 +1,413 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "The AWS CloudFormation template for this Serverless application",
+  "Resources": {
+    "ServerlessDeploymentBucket": {
+      "Type": "AWS::S3::Bucket"
+    },
+    "HelloLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/canary-deployments-test-dev-hello"
+      }
+    },
+    "HelloNoProvisionedLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/canary-deployments-test-dev-helloNoProvisioned"
+      }
+    },
+    "IamRoleLambdaExecution": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "lambda.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": {
+              "Fn::Join": [
+                "-",
+                [
+                  "dev",
+                  "canary-deployments-test",
+                  "lambda"
+                ]
+              ]
+            },
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/canary-deployments-test-dev-hello:*"
+                    },
+                    {
+                      "Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/canary-deployments-test-dev-preHook:*"
+                    },
+                    {
+                      "Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/canary-deployments-test-dev-postHook:*"
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/canary-deployments-test-dev-hello:*:*"
+                    },
+                    {
+                      "Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/canary-deployments-test-dev-preHook:*:*"
+                    },
+                    {
+                      "Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/canary-deployments-test-dev-postHook:*:*"
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "codedeploy:*"
+                  ],
+                  "Resource": [
+                    "*"
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "dynamodb:GetRecords",
+                    "dynamodb:GetShardIterator",
+                    "dynamodb:DescribeStream",
+                    "dynamodb:ListStreams"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "StreamsTestTable",
+                        "StreamArn"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "Path": "/",
+        "RoleName": {
+          "Fn::Join": [
+            "-",
+            [
+              "canary-deployments-test",
+              "dev",
+              "us-east-1",
+              "lambdaRole"
+            ]
+          ]
+        }
+      }
+    },
+    "HelloLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/canary-deployments-test/dev/1520191533287-2018-03-04T19:25:33.287Z/canary-deployments-test.zip"
+        },
+        "FunctionName": "canary-deployments-test-dev-hello",
+        "Handler": "handler.hello",
+        "MemorySize": 1024,
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs6.10",
+        "Timeout": 6
+      },
+      "DependsOn": [
+        "HelloLogGroup",
+        "IamRoleLambdaExecution"
+      ]
+    },
+    "HelloProvConcLambdaAlias": {
+      "Type": "AWS::Lambda::Alias",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "HelloLambdaFunction"
+        },
+        "FunctionVersion": {
+          "Fn::GetAtt": [
+            "HelloLambdaVersionFYAirphUvjV7H12yGxU1eQrqAiSBMjAi9hdLPgV62L8",
+            "Version"
+          ]
+        },
+        "Name": "provisioned",
+        "ProvisionedConcurrencyConfig": {
+          "ProvisionedConcurrentExecutions": 1
+        }
+      },
+      "DependsOn": "HelloLambdaFunction"
+    },
+    "HelloLambdaVersionFYAirphUvjV7H12yGxU1eQrqAiSBMjAi9hdLPgV62L8": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "HelloLambdaFunction"
+        },
+        "CodeSha256": "sZvdDgxnAbKe1yaQga0XJPD82+o5jFWz+J3lR+q9UHU="
+      }
+    },
+    "HelloNoProvisionedLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/canary-deployments-test/dev/1520191533287-2018-03-04T19:25:33.287Z/canary-deployments-test.zip"
+        },
+        "FunctionName": "canary-deployments-test-dev-helloNoProvisioned",
+        "Handler": "handler.helloNoProvisioned",
+        "MemorySize": 1024,
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs6.10",
+        "Timeout": 6
+      },
+      "DependsOn": [
+        "HelloNoProvisionedLogGroup",
+        "IamRoleLambdaExecution"
+      ]
+    },
+    "HelloNoProvisionedLambdaVersionIYyrXlfQM5jjU68REvnAzRxhgq9eoLqSsDjy0": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "HelloNoProvisionedLambdaFunction"
+        },
+        "CodeSha256": "sZvdDgxnAbKe1yaQga0XJPD82+o5jFWz+J3lR+q9UHU="
+      }
+    },
+    "HelloAlbTargetGroupHTTPSListener": {
+      "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+      "Properties": {
+        "TargetType": "lambda",
+        "Targets": [
+          {
+            "Id": {
+              "Fn::Join": [
+                ":",
+                [
+                  {
+                    "Fn::GetAtt": [
+                      "HelloLambdaFunction",
+                      "Arn"
+                    ]
+                  },
+                  "provisioned"
+                ]
+              ]
+            }
+          }
+        ],
+        "Name": "9bef8becbcde4b5eb49428f32979b31e"
+      },
+      "DependsOn": [
+        "HelloLambdaPermissionRegisterTarget"
+      ]
+    },
+    "HelloNoProvisionedAlbTargetGroupHTTPSListener": {
+      "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+      "Properties": {
+        "TargetType": "lambda",
+        "Targets": [
+          {
+            "Id": {
+              "Fn::GetAtt": [
+                "HelloNoProvisionedLambdaFunction",
+                "Arn"
+              ]
+            }
+          }
+        ],
+        "Name": "9bef8becbcde4b5eb49428f32979b31e"
+      },
+      "DependsOn": [
+        "HelloNoProvisionedLambdaPermissionRegisterTarget"
+      ]
+    },
+    "HelloListenerRule1": {
+      "Type": "AWS::ElasticLoadBalancingV2::ListenerRule",
+      "Properties": {
+        "Actions": [
+          {
+            "Type": "forward",
+            "TargetGroupArn": {
+              "Ref": "HelloAlbTargetGroupHTTPSListener"
+            }
+          }
+        ],
+        "Conditions": [
+          {
+            "Field": "path-pattern",
+            "Values": [
+              "/hello*"
+            ]
+          }
+        ],
+        "ListenerArn": "arn:aws:elasticloadbalancing:region:account-id:listener/app/my-load-balancer/50dc6c495c0c9188/f2f7dc8efc522ab2",
+        "Priority": 1
+      }
+    },
+    "HelloNoProvisionedAlbListenerRule2": {
+      "Type": "AWS::ElasticLoadBalancingV2::ListenerRule",
+      "Properties": {
+        "Actions": [
+          {
+            "Type": "forward",
+            "TargetGroupArn": {
+              "Ref": "HelloNoProvisionedAlbTargetGroupHTTPSListener"
+            }
+          }
+        ],
+        "Conditions": [
+          {
+            "Field": "path-pattern",
+            "Values": [
+              "/helloNoProvisioned*"
+            ]
+          }
+        ],
+        "ListenerArn": "arn:aws:elasticloadbalancing:region:account-id:listener/app/my-load-balancer/50dc6c495c0c9188/f2f7dc8efc522ab2"
+      },
+      "Priority": 2
+    },
+    "HelloLambdaPermissionAlb": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Fn::Join": [
+            ":",
+            [
+              {
+                "Fn::GetAtt": [
+                  "HelloLambdaFunction",
+                  "Arn"
+                ]
+              },
+              "provisioned"
+            ]
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "elasticloadbalancing.amazonaws.com",
+        "SourceArn": "arn:aws:elasticloadbalancing:region:account-id:listener/app/my-load-balancer/50dc6c495c0c9188/f2f7dc8efc522ab2"
+      },
+      "DependsOn": [
+        "HelloProvConcLambdaAlias"
+      ]
+    },
+    "HelloLambdaPermissionRegisterTarget": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Fn::Join": [
+            ":",
+            [
+              {
+                "Fn::GetAtt": [
+                  "HelloLambdaFunction",
+                  "Arn"
+                ]
+              },
+              "provisioned"
+            ]
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "elasticloadbalancing.amazonaws.com"
+      },
+      "DependsOn": [
+        "HelloProvConcLambdaAlias"
+      ]
+    },
+    "HelloNoProvisionedLambdaPermissionAlb": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "HelloNoProvisionedLambdaFunction",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "elasticloadbalancing.amazonaws.com",
+        "SourceArn": "arn:aws:elasticloadbalancing:region:account-id:listener/app/my-load-balancer/50dc6c495c0c9188/f2f7dc8efc522ab2"
+      }
+    },
+    "HelloNoProvisionedPermissionRegisterTarget": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "HelloNoProvisionedLambdaFunction",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "elasticloadbalancing.amazonaws.com"
+      }
+    }
+  },
+  "Outputs": {
+    "ServerlessDeploymentBucketName": {
+      "Value": {
+        "Ref": "ServerlessDeploymentBucket"
+      }
+    },
+    "HelloLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "HelloLambdaVersionFYAirphUvjV7H12yGxU1eQrqAiSBMjAi9hdLPgV62L8"
+      }
+    },
+    "HelloNoProvisionedLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "HelloNoProvisionedLambdaVersionIYyrXlfQM5jjU68REvnAzRxhgq9eoLqSsDjy0"
+      }
+    }
+  }
+}

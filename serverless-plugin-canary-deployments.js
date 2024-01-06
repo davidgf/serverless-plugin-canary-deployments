@@ -125,17 +125,33 @@ class ServerlessCanaryDeployments {
     )
   }
 
-  buildFunctionResources (serverlessFnName) {
-    const functionName = this.naming.getLambdaLogicalId(serverlessFnName)
-    const deploymentSettings = this.getDeploymentSettingsFor(serverlessFnName)
+  buildFunctionResources (serverlessFunctionName) {
+    const functionName = this.naming.getLambdaLogicalId(serverlessFunctionName)
+    const deploymentSettings = this.getDeploymentSettingsFor(serverlessFunctionName)
     const deploymentGrTpl = this.buildFunctionDeploymentGroup({ deploymentSettings, functionName })
     const deploymentGroup = this.getResourceLogicalName(deploymentGrTpl)
-    const aliasTpl = this.buildFunctionAlias({ deploymentSettings, functionName, deploymentGroup })
-    const functionAlias = this.getResourceLogicalName(aliasTpl)
-    const lambdaPermissions = this.buildPermissionsForAlias({ functionName, functionAlias })
-    const eventsWithAlias = this.buildEventsForAlias({ functionName, functionAlias })
-
+    const targetAlias = this.getFunctionTargetAlias(serverlessFunctionName)
+    const aliasTpl = this.buildFunctionAlias({ deploymentSettings, functionName, deploymentGroup, targetAlias })
+    const functionAliasLogicalId = this.getResourceLogicalName(aliasTpl)
+    const lambdaPermissions = this.buildPermissionsForAlias({ functionName, functionAliasLogicalId, targetAlias })
+    const eventsWithAlias = this.buildEventsForAlias({ functionName, functionAliasLogicalId })
+    this.setFunctionTargetAlias(serverlessFunctionName, functionAliasLogicalId, deploymentSettings.alias)
     return [deploymentGrTpl, aliasTpl, ...lambdaPermissions, ...eventsWithAlias]
+  }
+
+  setFunctionTargetAlias (serverlessFunctionName, aliasLogicalId, aliasName) {
+    this.service.getFunction(serverlessFunctionName).targetAlias = { name: aliasName, logicalId: aliasLogicalId }
+  }
+
+  getFunctionTargetAlias (serverlessFunctionName) {
+    const { targetAlias } = this.service.getFunction(serverlessFunctionName)
+    return targetAlias
+  }
+
+  getFunctionTargetAliasTemplate (targetAlias) {
+    if (targetAlias) {
+      return this.compiledTpl.Resources[targetAlias.logicalId]
+    }
   }
 
   buildCodeDeployApp () {
@@ -164,10 +180,10 @@ class ServerlessCanaryDeployments {
     return { [logicalName]: template }
   }
 
-  buildFunctionAlias ({ deploymentSettings = {}, functionName, deploymentGroup }) {
+  buildFunctionAlias ({ deploymentSettings = {}, functionName, deploymentGroup, targetAlias }) {
     const { alias } = deploymentSettings
     const functionVersion = this.getVersionNameFor(functionName)
-    const logicalName = `${functionName}Alias${alias}`
+    const logicalName = targetAlias ? targetAlias.logicalId : `${functionName}Alias${alias}`
     const beforeHook = this.getFunctionName(deploymentSettings.preTrafficHook)
     const afterHook = this.getFunctionName(deploymentSettings.postTrafficHook)
     const trafficShiftingSettings = {
@@ -176,11 +192,13 @@ class ServerlessCanaryDeployments {
       afterHook,
       beforeHook
     }
+    const targetAliasTemplate = this.getFunctionTargetAliasTemplate(targetAlias)
     const template = CfGenerators.lambda.buildAlias({
       alias,
       functionName,
       functionVersion,
-      trafficShiftingSettings
+      trafficShiftingSettings,
+      targetAliasTemplate
     })
     return { [logicalName]: template }
   }
@@ -193,20 +211,20 @@ class ServerlessCanaryDeployments {
     return `${this.naming.getStackName()}-${deploymentGroupLogicalId}`.slice(0, 100)
   }
 
-  getFunctionName (slsFunctionName) {
-    return slsFunctionName ? this.naming.getLambdaLogicalId(slsFunctionName) : null
+  getFunctionName (serverlessFunctionName) {
+    return serverlessFunctionName ? this.naming.getLambdaLogicalId(serverlessFunctionName) : null
   }
 
-  buildPermissionsForAlias ({ functionName, functionAlias }) {
+  buildPermissionsForAlias ({ functionName, functionAliasLogicalId, targetAlias }) {
     const permissions = this.getLambdaPermissionsFor(functionName)
     return _.entries(permissions).map(([logicalName, template]) => {
       const templateWithAlias = CfGenerators.lambda
-        .replacePermissionFunctionWithAlias(template, functionAlias)
+        .replacePermissionFunctionWithAlias(template, functionAliasLogicalId, targetAlias)
       return { [logicalName]: templateWithAlias }
     })
   }
 
-  buildEventsForAlias ({ functionName, functionAlias }) {
+  buildEventsForAlias ({ functionName, functionAliasLogicalId }) {
     const replaceAliasStrategy = {
       'AWS::Lambda::EventSourceMapping': CfGenerators.lambda.replaceEventMappingFunctionWithAlias,
       'AWS::ApiGateway::Method': CfGenerators.apiGateway.replaceMethodUriWithAlias,
@@ -218,12 +236,13 @@ class ServerlessCanaryDeployments {
       'AWS::Events::Rule': CfGenerators.cloudWatchEvents.replaceCloudWatchEventRuleTargetWithAlias,
       'AWS::Logs::SubscriptionFilter': CfGenerators.cloudWatchLogs.replaceCloudWatchLogsDestinationArnWithAlias,
       'AWS::IoT::TopicRule': CfGenerators.iot.replaceIotTopicRuleActionArnWithAlias,
-      'AWS::AppSync::DataSource': CfGenerators.appSync.replaceAppSyncDataSourceWithAlias
+      'AWS::AppSync::DataSource': CfGenerators.appSync.replaceAppSyncDataSourceWithAlias,
+      'AWS::ElasticLoadBalancingV2::TargetGroup': CfGenerators.elasticLoadBalancingV2.replaceElbV2TargetGroupWithAlias
     }
     const functionEvents = this.getEventsFor(functionName)
     const functionEventsEntries = _.entries(functionEvents)
     const eventsWithAlias = functionEventsEntries.map(([logicalName, event]) => {
-      const evt = replaceAliasStrategy[event.Type](event, functionAlias, functionName)
+      const evt = replaceAliasStrategy[event.Type](event, functionAliasLogicalId, functionName)
       return { [logicalName]: evt }
     })
     return eventsWithAlias
@@ -241,6 +260,7 @@ class ServerlessCanaryDeployments {
     const cloudWatchLogs = this.getCloudWatchLogsFor(functionName)
     const iotTopicRules = this.getIotTopicRulesFor(functionName)
     const appSyncDataSources = this.getAppSyncDataSourcesFor(functionName)
+    const elbV2TargetGroups = this.getElbV2TargetGroupsFor(functionName)
     return Object.assign(
       {},
       apiGatewayMethods,
@@ -253,7 +273,8 @@ class ServerlessCanaryDeployments {
       cloudWatchLogs,
       snsSubscriptions,
       iotTopicRules,
-      appSyncDataSources
+      appSyncDataSources,
+      elbV2TargetGroups
     )
   }
 
@@ -408,6 +429,23 @@ class ServerlessCanaryDeployments {
     return getMappingsForFunction(this.compiledTpl.Resources)
   }
 
+  getElbV2TargetGroupsFor (functionName) {
+    const isElbV2TargetGroup = _.matchesProperty('Type', 'AWS::ElasticLoadBalancingV2::TargetGroup')
+    const isElbV2TargetGroupForFunction = _.pipe(
+      _.prop('Properties.Targets'),
+      _.some(
+        _.overSome([
+          _.matchesProperty('Id.Fn::GetAtt[0]', functionName),
+          _.matchesProperty('Id.Fn::Join[1][0].Fn::GetAtt[0]', functionName)
+        ]))
+    )
+    const getMappingsForFunction = _.pipe(
+      _.pickBy(isElbV2TargetGroup),
+      _.pickBy(isElbV2TargetGroupForFunction)
+    )
+    return getMappingsForFunction(this.compiledTpl.Resources)
+  }
+
   getVersionNameFor (functionName) {
     const isLambdaVersion = _.matchesProperty('Type', 'AWS::Lambda::Version')
     const isVersionForFunction = _.matchesProperty('Properties.FunctionName.Ref', functionName)
@@ -420,9 +458,10 @@ class ServerlessCanaryDeployments {
 
   getLambdaPermissionsFor (functionName) {
     const isLambdaPermission = _.matchesProperty('Type', 'AWS::Lambda::Permission')
-    const isPermissionForFunction = _.cond([
-      [_.prop('Properties.FunctionName.Fn::GetAtt[0]'), _.matchesProperty('Properties.FunctionName.Fn::GetAtt[0]', functionName)],
-      [_.prop('Properties.FunctionName.Ref'), _.matchesProperty('Properties.FunctionName.Ref', functionName)]
+    const isPermissionForFunction = _.overSome([
+      _.matchesProperty('Properties.FunctionName.Fn::GetAtt[0]', functionName),
+      _.matchesProperty('Properties.FunctionName.Fn::Join[1][0].Fn::GetAtt[0]', functionName),
+      _.matchesProperty('Properties.FunctionName.Ref', functionName)
     ])
 
     const getPermissionForFunction = _.pipe(
@@ -437,8 +476,8 @@ class ServerlessCanaryDeployments {
     return _.head(_.keys(resource))
   }
 
-  getDeploymentSettingsFor (slsFunctionName) {
-    const fnDeploymentSetting = this.service.getFunction(slsFunctionName).deploymentSettings
+  getDeploymentSettingsFor (serverlessFunctionName) {
+    const fnDeploymentSetting = this.service.getFunction(serverlessFunctionName).deploymentSettings
     return Object.assign({}, this.globalSettings, fnDeploymentSetting)
   }
 }
