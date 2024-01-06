@@ -1,24 +1,26 @@
 {
-  "name": "serverless-plugin-canary-deployments",
+  "name": "@flagsmith/serverless-plugin-canary-deployments",
   "engines": {
     "node": ">=4.0"
   },
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "A Serverless plugin to implement canary deployment of Lambda functions",
   "main": "serverless-plugin-canary-deployments.js",
   "scripts": {
-    "test": "npm run lint && NODE_ENV=test ./node_modules/mocha/bin/mocha $(find ./ -name '*.test.js' -not -path '.*/node_modules/*')",
-    "watch": "NODE_ENV=test ./node_modules/mocha/bin/mocha -w $(find ./ -name '*.test.js' -not -path '*/node_modules/*')",
+    "test": "npm run lint && NODE_ENV=test npx mocha $(find ./ -name '*.test.js' -not -path '.*/node_modules/*')",
+    "watch": "NODE_ENV=test npx mocha -w $(find ./ -name '*.test.js' -not -path '*/node_modules/*')",
     "lint": "standard"
   },
   "author": "David García <davidgf1987@gmail.com>",
   "contributors": [
     "Carlos Castellanos <me@carloscastellanosvera.com> (https://github.com/ccverak/)",
-    "Kartikeya Verma <kverma23@outlook.com> (https://github.com/kverma23/)"
+    "Kartikeya Verma <kverma23@outlook.com> (https://github.com/kverma23/)",
+    "Matthew Elwell <matthew.elwell@flagsmith.com> (https://github.com/matt-elwell/)",
+    "Kim Gustyr <kim.gustyr@flagsmith.com> (https://github.com/khvn26/)"
   ],
   "license": "ISC",
   "repository": {
-    "url": "https://github.com/davidgf/serverless-plugin-canary-deployments.git",
+    "url": "https://github.com/flagsmith/serverless-plugin-canary-deployments.git",
     "type": "git"
   },
   "dependencies": {
@@ -30,7 +32,7 @@
     "chai": "^4.2.0",
     "get-installed-path": "^4.0.8",
     "husky": "^3.0.1",
-    "mocha": "^8.2.1",
+    "mocha": "^10.2.0",
     "serverless": "^2.22.0",
     "standard": "*"
   },
