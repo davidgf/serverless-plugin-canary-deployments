@@ -19,6 +19,7 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
+          registry-url: https://registry.npmjs.org
 
       - name: Install dependencies
         run: npm ci --ignore-scripts
@@ -27,6 +28,6 @@ jobs:
         run: npm run test
 
       - name: Publish package
-        run: npm publish --access public
+        run: npm login && npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
