@@ -23,9 +23,8 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
-      
+
       - name: Install dependencies
-        if: steps.setup-node.outputs.cache-hit != 'true'
         run: npm ci --ignore-scripts
 
       - name: Run tests
