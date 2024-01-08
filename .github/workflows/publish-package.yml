@@ -1,17 +1,13 @@
-name: Tests
+name: Publish Package to npmjs
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+  release:
+    types: [published]
 
 jobs:
-  lint_and_test:
+  build:
     runs-on: ubuntu-latest
-    name: Linting & Tests
+    name: Tests & Publish
 
     steps:
       - name: Cloning repo
@@ -29,3 +25,8 @@ jobs:
 
       - name: Run tests
         run: npm run test
+
+      - name: Publish package
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
